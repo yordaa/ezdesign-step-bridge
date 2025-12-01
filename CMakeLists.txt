@@ -388,9 +388,50 @@ endif()
 # list <OCCT_MODULES> will contain all modules
 OCCT_MODULES_AND_TOOLKITS (MODULES "TOOLKITS" OCCT_MODULES)
 
-foreach (OCCT_MODULE ${OCCT_MODULES})
-  BUILD_MODULE (${OCCT_MODULE})
-endforeach()
+# Minimal build configuration
+set (BUILD_MINIMAL_DISTRIBUTION OFF CACHE BOOL "${BUILD_MINIMAL_DISTRIBUTION_DESCR}")
+if (BUILD_MINIMAL_DISTRIBUTION)
+  # Include minimal profiles
+  OCCT_INCLUDE_CMAKE_FILE ("adm/cmake/minimal_profiles")
+  
+  # Set default profile if not specified
+  if (NOT DEFINED BUILD_MINIMAL_PROFILE)
+    set (BUILD_MINIMAL_PROFILE "step-export" CACHE STRING "${BUILD_MINIMAL_PROFILE_DESCR}")
+  endif()
+  set_property(CACHE BUILD_MINIMAL_PROFILE PROPERTY STRINGS "step-export" "geometry-only" "data-exchange" "custom")
+  
+  # Custom modules option (only used when profile is 'custom')
+  if ("${BUILD_MINIMAL_PROFILE}" STREQUAL "custom")
+    if (NOT DEFINED BUILD_MINIMAL_CUSTOM_MODULES)
+      set (BUILD_MINIMAL_CUSTOM_MODULES "" CACHE STRING "${BUILD_MINIMAL_CUSTOM_MODULES_DESCR}")
+    endif()
+  endif()
+  
+  # Get modules for selected profile
+  GET_MINIMAL_PROFILE_MODULES (${BUILD_MINIMAL_PROFILE} MINIMAL_MODULES)
+  VALIDATE_MINIMAL_PROFILE_MODULES (${MINIMAL_MODULES})
+  
+  message (STATUS "Minimal build enabled with profile: ${BUILD_MINIMAL_PROFILE}")
+  message (STATUS "Minimal build modules: ${MINIMAL_MODULES}")
+  
+  # Disable all modules by default, then enable only those in profile
+  foreach (OCCT_MODULE ${OCCT_MODULES})
+    set (BUILD_MODULE_${OCCT_MODULE} OFF CACHE BOOL "${BUILD_MODULE_${OCCT_MODULE}_DESCR}" FORCE)
+  endforeach()
+  
+  # Enable modules specified in profile
+  foreach (MODULE ${MINIMAL_MODULES})
+    set (BUILD_MODULE_${MODULE} ON CACHE BOOL "${BUILD_MODULE_${MODULE}_DESCR}" FORCE)
+  endforeach()
+  
+  # Note: Dependencies will be automatically resolved by the existing build system
+  # when BUILD_TOOLKITS is populated later in this file
+else()
+  # Normal build: enable all modules by default
+  foreach (OCCT_MODULE ${OCCT_MODULES})
+    BUILD_MODULE (${OCCT_MODULE})
+  endforeach()
+endif()
 
 if (ANDROID AND BUILD_MODULE_Draw)
   message (STATUS "Info. Draw module is turned off due to it is not supported on Android")

@@ -127,6 +127,24 @@ want to build some particular libraries (toolkits) only, then you may uncheck
 all modules in the corresponding BUILD_MODUE_* options and provide the list of
 necessary libraries here. Of course, all dependencies will be resolved automatically")
 
+set (BUILD_MINIMAL_DISTRIBUTION_DESCR
+"Enable minimal build mode to build only a subset of OCCT modules. When enabled,
+only modules specified by BUILD_MINIMAL_PROFILE or BUILD_MINIMAL_CUSTOM_MODULES
+will be built, reducing distribution size significantly. Dependencies are
+automatically resolved and included.")
+
+set (BUILD_MINIMAL_PROFILE_DESCR
+"Select a predefined minimal build profile. Available profiles:
+- step-export: STEP file import/export only (FoundationClasses, ModelingData,
+  ModelingAlgorithms, DataExchange with TKDESTEP)
+- geometry-only: Core geometry operations without data exchange or visualization
+- data-exchange: All data exchange formats (STEP, IGES, STL, VRML, OBJ, PLY, etc.)
+- custom: Use BUILD_MINIMAL_CUSTOM_MODULES to specify custom module list")
+
+set (BUILD_MINIMAL_CUSTOM_MODULES_DESCR
+"Semicolon-separated list of module names to include in minimal build when
+BUILD_MINIMAL_PROFILE is set to 'custom'. Example: FoundationClasses;ModelingData;DataExchange")
+
 set (BUILD_SAMPLES_MFC_DESCR
 "Indicates whether OCCT MFC samples should be built together with OCCT.
 These samples show some possibilities of using OCCT and they can be executed
