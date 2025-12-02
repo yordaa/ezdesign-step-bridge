@@ -58,13 +58,24 @@ int main(int argc, char* argv[])
 
   const char* stepFile = argv[1];
   std::cout << "Reading STEP file: " << stepFile << std::endl;
+  
+  // Check file exists
+  std::ifstream fileCheck(stepFile);
+  if (!fileCheck.good()) {
+    std::cerr << "ERROR: Cannot open file: " << stepFile << std::endl;
+    return 1;
+  }
+  fileCheck.close();
 
   try {
     OCC_CATCH_SIGNALS
 
     // 1. Read STEP file
     STEPControl_Reader reader;
+    std::cout << "Created STEPControl_Reader" << std::endl;
+    
     IFSelect_ReturnStatus status = reader.ReadFile(stepFile);
+    std::cout << "ReadFile returned status: " << status << std::endl;
     
     if (status != IFSelect_RetDone) {
       std::cerr << "ERROR: Failed to read STEP file. Status: " << status << std::endl;

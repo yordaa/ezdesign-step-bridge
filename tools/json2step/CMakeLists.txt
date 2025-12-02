@@ -48,11 +48,25 @@ endif()
 # Required OCCT toolkits for STEP export
 # These will be automatically resolved via EXTERNLIB file
 
-# Round-trip test program (optional - can be tested manually with DRAW or other OCCT tools)
-# Note: Test program compilation has dependency resolution issues
-# Basic verification: STEP file structure validated (ISO-10303-21 format, valid header, DATA section)
-# Full round-trip can be tested using:
-#   - OCCT DRAW: readstep command
-#   - STEPControl_Reader in custom application
-#   - Third-party STEP viewers
+# Round-trip test program
+# Use same approach as json2step - standalone executable with manual library linking
+add_executable(test_step_roundtrip test_step_roundtrip.cxx)
+# Link against required OCCT libraries for STEP reading
+# Note: Using library names without TK prefix (OCCT internal naming)
+target_link_libraries(test_step_roundtrip PRIVATE
+  ${CMAKE_BINARY_DIR}/mac64/clang/lib/${CMAKE_STATIC_LIBRARY_PREFIX}TKSTEPControl${CMAKE_STATIC_LIBRARY_SUFFIX}
+  ${CMAKE_BINARY_DIR}/mac64/clang/lib/${CMAKE_STATIC_LIBRARY_PREFIX}TKSTEP${CMAKE_STATIC_LIBRARY_SUFFIX}
+  ${CMAKE_BINARY_DIR}/mac64/clang/lib/${CMAKE_STATIC_LIBRARY_PREFIX}TKXSBase${CMAKE_STATIC_LIBRARY_SUFFIX}
+  ${CMAKE_BINARY_DIR}/mac64/clang/lib/${CMAKE_STATIC_LIBRARY_PREFIX}TKDE${CMAKE_STATIC_LIBRARY_SUFFIX}
+  ${CMAKE_BINARY_DIR}/mac64/clang/lib/${CMAKE_STATIC_LIBRARY_PREFIX}TKBRep${CMAKE_STATIC_LIBRARY_SUFFIX}
+  ${CMAKE_BINARY_DIR}/mac64/clang/lib/${CMAKE_STATIC_LIBRARY_PREFIX}TKTopAlgo${CMAKE_STATIC_LIBRARY_SUFFIX}
+  ${CMAKE_BINARY_DIR}/mac64/clang/lib/${CMAKE_STATIC_LIBRARY_PREFIX}TKGeomBase${CMAKE_STATIC_LIBRARY_SUFFIX}
+  ${CMAKE_BINARY_DIR}/mac64/clang/lib/${CMAKE_STATIC_LIBRARY_PREFIX}TKGeomAlgo${CMAKE_STATIC_LIBRARY_SUFFIX}
+  ${CMAKE_BINARY_DIR}/mac64/clang/lib/${CMAKE_STATIC_LIBRARY_PREFIX}TKG3d${CMAKE_STATIC_LIBRARY_SUFFIX}
+  ${CMAKE_BINARY_DIR}/mac64/clang/lib/${CMAKE_STATIC_LIBRARY_PREFIX}TKG2d${CMAKE_STATIC_LIBRARY_SUFFIX}
+  ${CMAKE_BINARY_DIR}/mac64/clang/lib/${CMAKE_STATIC_LIBRARY_PREFIX}TKMath${CMAKE_STATIC_LIBRARY_SUFFIX}
+  ${CMAKE_BINARY_DIR}/mac64/clang/lib/${CMAKE_STATIC_LIBRARY_PREFIX}TKernel${CMAKE_STATIC_LIBRARY_SUFFIX}
+  ${CMAKE_BINARY_DIR}/mac64/clang/lib/${CMAKE_STATIC_LIBRARY_PREFIX}TKDESTEP${CMAKE_STATIC_LIBRARY_SUFFIX}
+  ${CMAKE_BINARY_DIR}/mac64/clang/lib/${CMAKE_STATIC_LIBRARY_PREFIX}TKCDF${CMAKE_STATIC_LIBRARY_SUFFIX}
+)
 
