@@ -25,11 +25,9 @@
 #include <map>
 #include <string>
 
-// nlohmann/json will be included in .cxx file to avoid header dependency issues
-// Forward declaration for header
-namespace nlohmann {
-  class json;
-}
+// Include nlohmann/json - it's header-only so safe to include in header
+// The include path is set by CMakeLists.txt
+#include <nlohmann/json.hpp>
 
 //! JSON reader for ezdesign format
 //! Parses JSON file and populates C++ data structures

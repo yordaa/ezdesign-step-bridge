@@ -17,6 +17,7 @@
 
 #include <Standard_Failure.hxx>
 #include <Standard_ErrorHandler.hxx>
+#include <TopoDS.hxx>
 #include <BRep_Builder.hxx>
 #include <BRepBuilderAPI_MakeVertex.hxx>
 #include <BRepBuilderAPI_MakeEdge.hxx>
@@ -25,6 +26,7 @@
 #include <BRepBuilderAPI_MakeSolid.hxx>
 #include <BRep_Tool.hxx>
 #include <Precision.hxx>
+#include <TopLoc_Location.hxx>
 #include <gp_Pnt.hxx>
 #include <gp_Pnt2d.hxx>
 #include <TColgp_Array1OfPnt.hxx>
@@ -35,6 +37,7 @@
 #include <TColStd_HArray1OfReal.hxx>
 #include <TColStd_Array1OfInteger.hxx>
 #include <GeomAPI_Interpolate.hxx>
+#include <sstream>
 
 //=======================================================================
 // function : EzDesignToOCCTConverter
@@ -292,9 +295,10 @@ TopoDS_Edge EzDesignToOCCTConverter::convertHalfEdge(
   TopoDS_Vertex vStart = convertVertex(startVertex);
   TopoDS_Vertex vEnd = convertVertex(endVertex);
 
-  // 2. Check if curve_data exists
-  if (theHalfEdge.curve_data.control_points.data.empty()) {
-    // No curve data - create straight edge
+  // 2. Check if curve_data exists and is valid
+  if (theHalfEdge.curve_data.control_points.data.empty() ||
+      theHalfEdge.curve_data.control_points.number_u_points < 2) {
+    // No curve data or insufficient control points - create straight edge
     gp_Pnt p1(startVertex.position[0], startVertex.position[1], startVertex.position[2]);
     gp_Pnt p2(endVertex.position[0], endVertex.position[1], endVertex.position[2]);
     BRepBuilderAPI_MakeEdge edgeMaker(p1, p2);
@@ -308,8 +312,15 @@ TopoDS_Edge EzDesignToOCCTConverter::convertHalfEdge(
   // 3. Convert 2D curve
   Handle(Geom2d_BSplineCurve) curve2d = convertCurve2D(theHalfEdge.curve_data);
   if (curve2d.IsNull()) {
-    addError("HalfEdge " + std::to_string(theHalfEdge.id) + ": Failed to convert 2D curve");
-    return TopoDS_Edge();
+    // Fallback to straight edge if curve conversion fails
+    gp_Pnt p1(startVertex.position[0], startVertex.position[1], startVertex.position[2]);
+    gp_Pnt p2(endVertex.position[0], endVertex.position[1], endVertex.position[2]);
+    BRepBuilderAPI_MakeEdge edgeMaker(p1, p2);
+    if (!edgeMaker.IsDone()) {
+      addError("HalfEdge " + std::to_string(theHalfEdge.id) + ": Failed to create fallback straight edge");
+      return TopoDS_Edge();
+    }
+    return edgeMaker.Edge();
   }
 
   // Note: ezdesign convention ensures half-edges are CCW w.r.t. face outward normal
@@ -336,8 +347,11 @@ TopoDS_Edge EzDesignToOCCTConverter::convertHalfEdge(
   TopoDS_Edge edge = edgeMaker.Edge();
 
   // 7. Attach 2D curve to edge for face parameterization
+  // Note: The face will be created later, but we attach the 2D curve now
+  // using the surface and an identity location
   BRep_Builder builder;
-  builder.UpdateEdge(edge, curve2d, theSurface, Precision::Confusion());
+  TopLoc_Location identityLoc;  // Identity location
+  builder.UpdateEdge(edge, curve2d, theSurface, identityLoc, Precision::Confusion());
 
   return edge;
 }
@@ -383,21 +397,197 @@ Handle(Geom_BSplineSurface) EzDesignToOCCTConverter::convertSurface(const EzSurf
   TColgp_Array2OfPnt poles = reshapeControlPoints3D(cp.data, numU, numV);
 
   // 2. Process U-direction knots and multiplicities
-  int nUKnots = static_cast<int>(uBasis.knot_vector.size());
-  TColStd_Array1OfReal uKnots(1, nUKnots);
-  TColStd_Array1OfInteger uMults(1, nUKnots);
+  // First, collapse repeated knots to unique knots
+  // For non-periodic B-splines: numPoles = sum(multiplicities) - degree - 1
+  // Expected: numU = sum(uMults) - uDegree - 1
+  // So: sum(uMults) = numU + uDegree + 1
+  
+  // Collapse to unique knots first to determine array sizes
+  const double tol = 1e-9;
+  std::vector<double> uUniqueKnots;
+  int i = 0;
+  while (i < static_cast<int>(uBasis.knot_vector.size())) {
+    double currentKnot = uBasis.knot_vector[i];
+    uUniqueKnots.push_back(currentKnot);
+    int j = i + 1;
+    while (j < static_cast<int>(uBasis.knot_vector.size()) && 
+           std::abs(uBasis.knot_vector[j] - currentKnot) < tol) {
+      j++;
+    }
+    i = j;
+  }
+  
+  int nUUniqueKnots = static_cast<int>(uUniqueKnots.size());
+  int expectedUSum = numU + uBasis.degree + 1;
+  
+  TColStd_Array1OfReal uKnots(1, nUUniqueKnots);
+  TColStd_Array1OfInteger uMults(1, nUUniqueKnots);
   computeKnotMultiplicities(uBasis.knot_vector, uBasis.degree, uMults);
-  for (int i = 0; i < nUKnots; i++) {
-    uKnots.SetValue(i + 1, uBasis.knot_vector[i]);
+  
+  // Validate and adjust multiplicities to match expected sum
+  // For non-periodic: numPoles = sum(multiplicities) - degree - 1
+  // So: sum(multiplicities) = numPoles + degree + 1
+  int actualUSum = 0;
+  for (int i = 1; i <= nUUniqueKnots; i++) {
+    actualUSum += uMults.Value(i);
+  }
+  
+  if (actualUSum != expectedUSum) {
+    // Adjust multiplicities to match expected sum
+    int diff = expectedUSum - actualUSum;
+    
+    if (diff > 0) {
+      // Need to increase multiplicities
+      // Distribute excess to internal knots (up to degree limit)
+      int internalKnots = nUUniqueKnots - 2;
+      if (internalKnots > 0) {
+        int perKnot = diff / internalKnots;
+        int remainder = diff % internalKnots;
+        for (int i = 2; i < nUUniqueKnots; i++) {
+          int currentMult = uMults.Value(i);
+          int newMult = currentMult + perKnot + (i - 2 < remainder ? 1 : 0);
+          if (newMult > uBasis.degree) {
+            newMult = uBasis.degree;
+          }
+          uMults.SetValue(i, newMult);
+        }
+      }
+    }
+    else {
+      // Need to decrease multiplicities
+      // Reduce internal knots first, then adjust first/last if needed
+      int excess = -diff;
+      for (int i = 2; i < nUUniqueKnots && excess > 0; i++) {
+        int currentMult = uMults.Value(i);
+        int reduction = (excess < currentMult - 1) ? excess : (currentMult - 1);
+        uMults.SetValue(i, currentMult - reduction);
+        excess -= reduction;
+      }
+      // If still excess, reduce first/last (but keep at least 1)
+      if (excess > 0 && nUUniqueKnots > 0) {
+        int firstMult = uMults.Value(1);
+        if (firstMult > 1 && excess > 0) {
+          int reduction = (excess < firstMult - 1) ? excess : (firstMult - 1);
+          uMults.SetValue(1, firstMult - reduction);
+          excess -= reduction;
+        }
+      }
+      if (excess > 0 && nUUniqueKnots > 1) {
+        int lastMult = uMults.Value(nUUniqueKnots);
+        if (lastMult > 1 && excess > 0) {
+          int reduction = (excess < lastMult - 1) ? excess : (lastMult - 1);
+          uMults.SetValue(nUUniqueKnots, lastMult - reduction);
+        }
+      }
+    }
+    
+    // Re-validate
+    actualUSum = 0;
+    for (int i = 1; i <= nUUniqueKnots; i++) {
+      actualUSum += uMults.Value(i);
+    }
+    if (actualUSum != expectedUSum) {
+      std::ostringstream oss;
+      oss << "U-direction: Could not adjust multiplicities. Expected: " << expectedUSum
+          << ", actual: " << actualUSum << " (numU=" << numU << ", degree=" << uBasis.degree 
+          << ", nUniqueKnots=" << nUUniqueKnots << ")";
+      addError(oss.str());
+      return Handle(Geom_BSplineSurface)();
+    }
+  }
+  
+  for (int i = 0; i < nUUniqueKnots; i++) {
+    uKnots.SetValue(i + 1, uUniqueKnots[i]);
   }
 
   // 3. Process V-direction knots and multiplicities
-  int nVKnots = static_cast<int>(vBasis.knot_vector.size());
-  TColStd_Array1OfReal vKnots(1, nVKnots);
-  TColStd_Array1OfInteger vMults(1, nVKnots);
+  std::vector<double> vUniqueKnots;
+  i = 0;
+  while (i < static_cast<int>(vBasis.knot_vector.size())) {
+    double currentKnot = vBasis.knot_vector[i];
+    vUniqueKnots.push_back(currentKnot);
+    int j = i + 1;
+    while (j < static_cast<int>(vBasis.knot_vector.size()) && 
+           std::abs(vBasis.knot_vector[j] - currentKnot) < tol) {
+      j++;
+    }
+    i = j;
+  }
+  
+  int nVUniqueKnots = static_cast<int>(vUniqueKnots.size());
+  int expectedVSum = numV + vBasis.degree + 1;
+  
+  TColStd_Array1OfReal vKnots(1, nVUniqueKnots);
+  TColStd_Array1OfInteger vMults(1, nVUniqueKnots);
   computeKnotMultiplicities(vBasis.knot_vector, vBasis.degree, vMults);
-  for (int i = 0; i < nVKnots; i++) {
-    vKnots.SetValue(i + 1, vBasis.knot_vector[i]);
+  
+  // Validate and adjust multiplicities to match expected sum
+  int actualVSum = 0;
+  for (int i = 1; i <= nVUniqueKnots; i++) {
+    actualVSum += vMults.Value(i);
+  }
+  
+  if (actualVSum != expectedVSum) {
+    // Adjust multiplicities to match expected sum (same logic as U-direction)
+    int diff = expectedVSum - actualVSum;
+    
+    if (diff > 0) {
+      int internalKnots = nVUniqueKnots - 2;
+      if (internalKnots > 0) {
+        int perKnot = diff / internalKnots;
+        int remainder = diff % internalKnots;
+        for (int i = 2; i < nVUniqueKnots; i++) {
+          int currentMult = vMults.Value(i);
+          int newMult = currentMult + perKnot + (i - 2 < remainder ? 1 : 0);
+          if (newMult > vBasis.degree) {
+            newMult = vBasis.degree;
+          }
+          vMults.SetValue(i, newMult);
+        }
+      }
+    }
+    else {
+      int excess = -diff;
+      for (int i = 2; i < nVUniqueKnots && excess > 0; i++) {
+        int currentMult = vMults.Value(i);
+        int reduction = (excess < currentMult - 1) ? excess : (currentMult - 1);
+        vMults.SetValue(i, currentMult - reduction);
+        excess -= reduction;
+      }
+      if (excess > 0 && nVUniqueKnots > 0) {
+        int firstMult = vMults.Value(1);
+        if (firstMult > 1 && excess > 0) {
+          int reduction = (excess < firstMult - 1) ? excess : (firstMult - 1);
+          vMults.SetValue(1, firstMult - reduction);
+          excess -= reduction;
+        }
+      }
+      if (excess > 0 && nVUniqueKnots > 1) {
+        int lastMult = vMults.Value(nVUniqueKnots);
+        if (lastMult > 1 && excess > 0) {
+          int reduction = (excess < lastMult - 1) ? excess : (lastMult - 1);
+          vMults.SetValue(nVUniqueKnots, lastMult - reduction);
+        }
+      }
+    }
+    
+    // Re-validate
+    actualVSum = 0;
+    for (int i = 1; i <= nVUniqueKnots; i++) {
+      actualVSum += vMults.Value(i);
+    }
+    if (actualVSum != expectedVSum) {
+      std::ostringstream oss;
+      oss << "V-direction: Could not adjust multiplicities. Expected: " << expectedVSum
+          << ", actual: " << actualVSum << " (numV=" << numV << ", degree=" << vBasis.degree 
+          << ", nUniqueKnots=" << nVUniqueKnots << ")";
+      addError(oss.str());
+      return Handle(Geom_BSplineSurface)();
+    }
+  }
+  
+  for (int i = 0; i < nVUniqueKnots; i++) {
+    vKnots.SetValue(i + 1, vUniqueKnots[i]);
   }
 
   // 4. Create surface
@@ -428,16 +618,92 @@ Handle(Geom2d_BSplineCurve) EzDesignToOCCTConverter::convertCurve2D(const EzCurv
 
   // 1. Reshape 2D control points
   int numPoints = cp.number_u_points;  // Actually number of control points
+  
+  // Validate: B-spline curve needs at least 2 poles
+  if (numPoints < 2) {
+    std::ostringstream oss;
+    oss << "Curve has insufficient control points: " << numPoints << " (minimum 2 required)";
+    addError(oss.str());
+    return Handle(Geom2d_BSplineCurve)();
+  }
+  
   TColgp_Array1OfPnt2d poles = reshapeControlPoints2D(cp.data, numPoints);
 
   // 2. Process knots and multiplicities
-  int nKnots = static_cast<int>(basis.knot_vector.size());
-  TColStd_Array1OfReal knots(1, nKnots);
-  TColStd_Array1OfInteger mults(1, nKnots);
+  // Collapse repeated knots to unique knots first
+  const double tol = 1e-9;
+  std::vector<double> uniqueKnots;
+  int i = 0;
+  while (i < static_cast<int>(basis.knot_vector.size())) {
+    double currentKnot = basis.knot_vector[i];
+    uniqueKnots.push_back(currentKnot);
+    int j = i + 1;
+    while (j < static_cast<int>(basis.knot_vector.size()) && 
+           std::abs(basis.knot_vector[j] - currentKnot) < tol) {
+      j++;
+    }
+    i = j;
+  }
+  
+  int nUniqueKnots = static_cast<int>(uniqueKnots.size());
+  int expectedSum = numPoints + basis.degree + 1;
+  
+  TColStd_Array1OfReal knots(1, nUniqueKnots);
+  TColStd_Array1OfInteger mults(1, nUniqueKnots);
   computeKnotMultiplicities(basis.knot_vector, basis.degree, mults);
+  
+  // Validate and adjust multiplicities to match expected sum
+  int actualSum = 0;
+  for (int i = 1; i <= nUniqueKnots; i++) {
+    actualSum += mults.Value(i);
+  }
+  
+  if (actualSum != expectedSum) {
+    // Adjust multiplicities (same logic as surfaces)
+    int diff = expectedSum - actualSum;
+    if (diff > 0) {
+      int internalKnots = nUniqueKnots - 2;
+      if (internalKnots > 0) {
+        int perKnot = diff / internalKnots;
+        int remainder = diff % internalKnots;
+        for (int i = 2; i < nUniqueKnots; i++) {
+          int currentMult = mults.Value(i);
+          int newMult = currentMult + perKnot + (i - 2 < remainder ? 1 : 0);
+          if (newMult > basis.degree) {
+            newMult = basis.degree;
+          }
+          mults.SetValue(i, newMult);
+        }
+      }
+    }
+    else {
+      int excess = -diff;
+      for (int i = 2; i < nUniqueKnots && excess > 0; i++) {
+        int currentMult = mults.Value(i);
+        int reduction = (excess < currentMult - 1) ? excess : (currentMult - 1);
+        mults.SetValue(i, currentMult - reduction);
+        excess -= reduction;
+      }
+      if (excess > 0 && nUniqueKnots > 0) {
+        int firstMult = mults.Value(1);
+        if (firstMult > 1 && excess > 0) {
+          int reduction = (excess < firstMult - 1) ? excess : (firstMult - 1);
+          mults.SetValue(1, firstMult - reduction);
+          excess -= reduction;
+        }
+      }
+      if (excess > 0 && nUniqueKnots > 1) {
+        int lastMult = mults.Value(nUniqueKnots);
+        if (lastMult > 1 && excess > 0) {
+          int reduction = (excess < lastMult - 1) ? excess : (lastMult - 1);
+          mults.SetValue(nUniqueKnots, lastMult - reduction);
+        }
+      }
+    }
+  }
 
-  for (int i = 0; i < nKnots; i++) {
-    knots.SetValue(i + 1, basis.knot_vector[i]);
+  for (int i = 0; i < nUniqueKnots; i++) {
+    knots.SetValue(i + 1, uniqueKnots[i]);
   }
 
   // 3. Create 2D curve
@@ -482,6 +748,12 @@ Handle(Geom_BSplineCurve) EzDesignToOCCTConverter::convertCurve3D(
 
   if (!interpolator.IsDone()) {
     // Fallback: create degree 1 (linear) curve
+    // Ensure we have at least 2 points
+    if (numSamples < 2) {
+      addError("Insufficient samples for 3D curve creation: " + std::to_string(numSamples));
+      return Handle(Geom_BSplineCurve)();
+    }
+    
     TColgp_Array1OfPnt poles3d(1, numSamples);
     for (int i = 1; i <= numSamples; i++) {
       poles3d.SetValue(i, points3d->Value(i));
@@ -495,7 +767,13 @@ Handle(Geom_BSplineCurve) EzDesignToOCCTConverter::convertCurve3D(
     return new Geom_BSplineCurve(poles3d, knots3d, mults3d, 1);
   }
 
-  return interpolator.Curve();
+  Handle(Geom_BSplineCurve) result = interpolator.Curve();
+  if (result.IsNull() || result->NbPoles() < 2) {
+    addError("Interpolated 3D curve has insufficient poles: " + 
+             (result.IsNull() ? std::string("null") : std::to_string(result->NbPoles())));
+    return Handle(Geom_BSplineCurve)();
+  }
+  return result;
 }
 
 //=======================================================================
@@ -514,23 +792,18 @@ void EzDesignToOCCTConverter::computeKnotMultiplicities(
     return;
   }
 
-  if (theMultiplicities.Length() != nKnots) {
-    addError("Knot multiplicities array size mismatch");
-    return;
-  }
-
+  // The knot vector may contain repeated knots.
+  // We need to collapse them to unique knots and compute multiplicities.
   // For non-periodic B-splines:
-  // - First and last multiplicities = degree + 1 (clamped end conditions)
-  // - Internal multiplicities = 1 (unless knot is repeated, max = degree)
-  //
-  // The knot vector is assumed to contain unique knots (one per unique value).
-  // If there are repeated knots, we detect and count them.
+  // - First and last unique knots should have multiplicity = degree + 1 (clamped)
+  // - Internal unique knots have multiplicity = count of repetitions (max = degree)
 
   const double tol = 1e-9;
+  std::vector<double> uniqueKnots;
+  std::vector<int> uniqueMults;
+  
   int i = 0;
-  int outputIndex = 1;
-
-  while (i < nKnots && outputIndex <= nKnots) {
+  while (i < nKnots) {
     double currentKnot = theKnots[i];
     int mult = 1;
     
@@ -541,32 +814,74 @@ void EzDesignToOCCTConverter::computeKnotMultiplicities(
       j++;
     }
     
-    // Determine if this is first, last, or internal knot
-    bool isFirst = (i == 0);
-    bool isLast = (j >= nKnots);
+    uniqueKnots.push_back(currentKnot);
+    uniqueMults.push_back(mult);
+    i = j;
+  }
+  
+  int nUniqueKnots = static_cast<int>(uniqueKnots.size());
+  
+  if (theMultiplicities.Length() != nUniqueKnots) {
+    std::ostringstream oss;
+    oss << "Knot multiplicities array size mismatch: expected " << nUniqueKnots
+        << " unique knots, but array size is " << theMultiplicities.Length();
+    addError(oss.str());
+    return;
+  }
+  
+  // Set multiplicities for unique knots
+  // For non-periodic B-splines: numPoles = sum(multiplicities) - degree - 1
+  // We need to ensure the sum matches the expected value
+  // If we have too many unique knots, we may need to adjust multiplicities
+  
+  for (int idx = 0; idx < nUniqueKnots; idx++) {
+    bool isFirst = (idx == 0);
+    bool isLast = (idx == nUniqueKnots - 1);
+    int mult = uniqueMults[idx];
     
     if (isFirst) {
-      // First knot: multiplicity = degree + 1 (clamped)
+      // First unique knot: multiplicity = degree + 1 (clamped)
       mult = theDegree + 1;
     }
     else if (isLast) {
-      // Last knot: multiplicity = degree + 1 (clamped)
+      // Last unique knot: multiplicity = degree + 1 (clamped)
       mult = theDegree + 1;
     }
     else {
-      // Internal knot: use counted multiplicity, but clamp to degree
+      // Internal unique knot: use counted multiplicity, but clamp to degree
       if (mult > theDegree) {
         mult = theDegree;
       }
-      // If no repetition detected, default to 1
       if (mult < 1) {
         mult = 1;
       }
     }
     
-    theMultiplicities.SetValue(outputIndex, mult);
-    outputIndex++;
-    i = j;
+    theMultiplicities.SetValue(idx + 1, mult);
+  }
+  
+  // Validate and adjust if needed
+  // If the sum is too large, we may need to reduce internal multiplicities
+  // This can happen if the JSON provides more unique knots than expected
+  int sumMults = 0;
+  for (int i = 1; i <= nUniqueKnots; i++) {
+    sumMults += theMultiplicities.Value(i);
+  }
+  
+  // If sum is too large and we have internal knots, try to reduce them
+  // This is a heuristic - ideally the JSON should provide correct knot vector
+  if (sumMults > (theDegree + 1) * 2 + (nUniqueKnots - 2) && nUniqueKnots > 2) {
+    // Sum is too large - reduce internal multiplicities if possible
+    int excess = sumMults - ((theDegree + 1) * 2 + (nUniqueKnots - 2));
+    for (int idx = 2; idx < nUniqueKnots; idx++) {
+      if (excess <= 0) break;
+      int currentMult = theMultiplicities.Value(idx);
+      if (currentMult > 1) {
+        int reduction = (excess < currentMult - 1) ? excess : (currentMult - 1);
+        theMultiplicities.SetValue(idx, currentMult - reduction);
+        excess -= reduction;
+      }
+    }
   }
 }
 

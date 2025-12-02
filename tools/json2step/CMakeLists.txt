@@ -2,7 +2,9 @@ project(json2step)
 
 # Detect nlohmann/json
 find_package(nlohmann_json QUIET)
-if (NOT nlohmann_json_FOUND)
+if (nlohmann_json_FOUND)
+  message(STATUS "Found nlohmann/json via find_package")
+else()
   # Try Homebrew paths on macOS
   if (APPLE)
     if (EXISTS "/opt/homebrew/include/nlohmann/json.hpp")
@@ -31,10 +33,16 @@ unset (USE_QT)
 # Add nlohmann/json include directory
 # Note: This must be after occt_toolkit.cmake creates the target
 if (nlohmann_json_FOUND)
-  target_include_directories(${PROJECT_NAME} PRIVATE ${nlohmann_json_INCLUDE_DIRS})
+  # When found via find_package, use the imported target or INCLUDE_DIRS
+  if (TARGET nlohmann_json::nlohmann_json)
+    target_link_libraries(${PROJECT_NAME} PRIVATE nlohmann_json::nlohmann_json)
+  else()
+    include_directories(${nlohmann_json_INCLUDE_DIRS})
+    target_include_directories(${PROJECT_NAME} PRIVATE ${nlohmann_json_INCLUDE_DIRS})
+  endif()
 elseif(nlohmann_json_INCLUDE_DIR)
-  target_include_directories(${PROJECT_NAME} PRIVATE ${nlohmann_json_INCLUDE_DIR})
   include_directories(${nlohmann_json_INCLUDE_DIR})
+  target_include_directories(${PROJECT_NAME} PRIVATE ${nlohmann_json_INCLUDE_DIR})
 endif()
 
 # Required OCCT toolkits for STEP export
