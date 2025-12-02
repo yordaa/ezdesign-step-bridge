@@ -1275,6 +1275,9 @@ if (BUILD_TOOL_TOOLKITS)
   endforeach()
 endif()
 
+# Add json2step tool (standalone executable, not part of Inspector tools)
+OCCT_ADD_SUBDIRECTORY ("tools/json2step")
+
 message (STATUS "Info: \(${CURRENT_TIME}\) OCCT toolkits processed")
 # samples do not support patch usage
 if (BUILD_SAMPLES_MFC OR BUILD_SAMPLES_QT)

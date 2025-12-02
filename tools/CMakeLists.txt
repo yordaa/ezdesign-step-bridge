@@ -373,6 +373,8 @@ if (BUILD_TOOL_TOOLKITS)
   endforeach()
 endif()
 
+# json2step tool is now added directly from main CMakeLists.txt
+
 message (STATUS "Info: \(${CURRENT_TIME}\) OCCT toolkits processed")
 
 OCCT_MODULES_AND_TOOLKITS (SAMPLES "SAMPLES_TOOLKITS" OCCT_SAMPLES)
