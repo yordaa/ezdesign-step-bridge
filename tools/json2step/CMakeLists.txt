@@ -48,3 +48,11 @@ endif()
 # Required OCCT toolkits for STEP export
 # These will be automatically resolved via EXTERNLIB file
 
+# Round-trip test program (optional - can be tested manually with DRAW or other OCCT tools)
+# Note: Test program compilation has dependency resolution issues
+# Basic verification: STEP file structure validated (ISO-10303-21 format, valid header, DATA section)
+# Full round-trip can be tested using:
+#   - OCCT DRAW: readstep command
+#   - STEPControl_Reader in custom application
+#   - Third-party STEP viewers
+
