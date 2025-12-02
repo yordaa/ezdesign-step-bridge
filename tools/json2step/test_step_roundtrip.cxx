@@ -16,7 +16,13 @@
 #include <Standard.hxx>
 #include <Standard_Failure.hxx>
 #include <Standard_ErrorHandler.hxx>
+#include <Message.hxx>
 #include <STEPControl_Reader.hxx>
+#include <XSControl_WorkSession.hxx>
+#include <IFSelect_WorkLibrary.hxx>
+#include <Interface_Protocol.hxx>
+#include <IFSelect_ReturnStatus.hxx>
+#include <IFSelect_PrintCount.hxx>
 #include <TopoDS.hxx>
 #include <TopoDS_Shape.hxx>
 #include <TopExp_Explorer.hxx>
@@ -28,8 +34,26 @@
 #include <TopoDS_Compound.hxx>
 #include <TopAbs_ShapeEnum.hxx>
 #include <BRep_Tool.hxx>
+#include <Interface_CheckIterator.hxx>
+#include <Interface_Check.hxx>
+#include <StepData_StepModel.hxx>
+#include <StepFile_Read.hxx>
+#include <StepData_Protocol.hxx>
+#include <Message_Printer.hxx>
+#include <Message_PrinterOStream.hxx>
+#include <IFSelect_PrintCount.hxx>
 #include <iostream>
 #include <iomanip>
+#include <fstream>
+#include <csignal>
+#include <cstdlib>
+
+// Signal handler for debugging
+void signalHandler(int sig) {
+  std::cerr << "\nERROR: Signal " << sig << " caught (likely segfault)" << std::endl;
+  std::cerr << "This indicates a crash during STEP file reading." << std::endl;
+  exit(1);
+}
 
 //=======================================================================
 // function : countShapes
@@ -51,6 +75,10 @@ int countShapes(const TopoDS_Shape& theShape, TopAbs_ShapeEnum theType)
 //=======================================================================
 int main(int argc, char* argv[])
 {
+  // Install signal handler for debugging
+  signal(SIGSEGV, signalHandler);
+  signal(SIGABRT, signalHandler);
+  
   if (argc < 2) {
     std::cerr << "Usage: " << argv[0] << " <step_file>" << std::endl;
     return 1;
@@ -71,18 +99,80 @@ int main(int argc, char* argv[])
     OCC_CATCH_SIGNALS
 
     // 1. Read STEP file
+    // STEPControl_Reader constructor automatically initializes STEPControl_Controller
+    std::cout << "Creating STEPControl_Reader..." << std::endl;
     STEPControl_Reader reader;
-    std::cout << "Created STEPControl_Reader" << std::endl;
+    std::cout << "STEPControl_Reader created successfully" << std::endl;
     
-    IFSelect_ReturnStatus status = reader.ReadFile(stepFile);
-    std::cout << "ReadFile returned status: " << status << std::endl;
+    // Check if WorkSession is valid
+    if (reader.WS().IsNull()) {
+      std::cerr << "ERROR: WorkSession is null" << std::endl;
+      return 1;
+    }
+    std::cout << "WorkSession is valid" << std::endl;
+    
+    // Check WorkLibrary and Protocol before reading
+    if (reader.WS()->WorkLibrary().IsNull()) {
+      std::cerr << "ERROR: WorkLibrary is null" << std::endl;
+      return 1;
+    }
+    if (reader.WS()->Protocol().IsNull()) {
+      std::cerr << "ERROR: Protocol is null" << std::endl;
+      return 1;
+    }
+    std::cout << "WorkLibrary and Protocol are valid" << std::endl;
+    
+    std::cout << "Reading STEP file: " << stepFile << "..." << std::endl;
+    std::cout.flush();
+    
+    IFSelect_ReturnStatus status = IFSelect_RetVoid;
+    try {
+      OCC_CATCH_SIGNALS
+      status = reader.ReadFile(stepFile);
+    }
+    catch (Standard_Failure const& ex) {
+      std::cerr << "ERROR: Exception during ReadFile: " << ex.GetMessageString() << std::endl;
+      return 1;
+    }
+    catch (...) {
+      std::cerr << "ERROR: Unknown exception during ReadFile" << std::endl;
+      return 1;
+    }
+    
+    std::cout << "ReadFile completed with status: " << status << std::endl;
+    std::cout << "  IFSelect_RetDone = 0 (success)" << std::endl;
+    std::cout << "  IFSelect_RetVoid = 1 (void/not found)" << std::endl;
+    std::cout << "  IFSelect_RetError = 2 (error)" << std::endl;
+    std::cout << "  IFSelect_RetFail = 3 (fail)" << std::endl;
+    
+    // Try to get model and check messages even if read failed
+    Handle(StepData_StepModel) model = reader.StepModel();
+    
+    if (!model.IsNull()) {
+      std::cout << "\n=== MODEL CHECK MESSAGES ===" << std::endl;
+      Interface_CheckIterator checks = model->Check();
+      if (!checks.IsEmpty(Standard_False)) {
+        std::cerr << "Model has check messages (failures and/or warnings)" << std::endl;
+        checks.Print(std::cerr, Standard_False, 0);
+      } else {
+        std::cout << "No check messages from model." << std::endl;
+      }
+    } else {
+      std::cerr << "Model is null - file may not have been parsed at all." << std::endl;
+    }
+    
+    // Print check messages from reader
+    std::cout << "\n=== READER CHECK MESSAGES ===" << std::endl;
+    reader.PrintCheckLoad(Standard_False, IFSelect_ItemsByEntity);
     
     if (status != IFSelect_RetDone) {
-      std::cerr << "ERROR: Failed to read STEP file. Status: " << status << std::endl;
+      std::cerr << "\n=== STEP FILE READ FAILED ===" << std::endl;
+      std::cerr << "Status: " << status << std::endl;
+      std::cerr << "The generated STEP file is invalid and cannot be read by OCCT." << std::endl;
       return 1;
     }
 
-    std::cout << "STEP file read successfully." << std::endl;
+    std::cout << "\nSTEP file read successfully." << std::endl;
 
     // 2. Transfer root shapes
     int numRoots = reader.NbRootsForTransfer();

@@ -11,7 +11,9 @@ Users need to convert topology/geometry data stored in JSON format (ezdesign for
 - **ADDED**: C++ API classes for JSON parsing and conversion (`EzDesignJsonReader`, `EzDesignToOCCTConverter`)
 - **ADDED**: Support for half-edge topology traversal and conversion to OCCT wires/faces
 - **ADDED**: Error handling and validation for JSON structure and geometry data
-- **ADDED**: Documentation and examples for using the JSON-to-STEP converter
+- **ADDED**: STEP file verification using OCCT's `STEPControl_Reader` to ensure generated files are valid and can be read back
+- **ADDED**: Detailed error reporting from OCCT STEP reader (`PrintCheckLoad`, `Interface_CheckIterator`) to identify issues in generated STEP files
+- **ADDED**: Verification test program that reads generated STEP files and reports parsing errors, entity-level issues, and transfer failures
 
 ## Impact
 

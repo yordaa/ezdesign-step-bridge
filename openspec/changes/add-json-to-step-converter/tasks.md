@@ -142,91 +142,18 @@
     - [x] Verify STEP file is generated (`/tmp/test_output.step`)
     - [x] Check file size is reasonable (127KB, 2092 entities - valid size)
     - [x] Verify STEP file has correct extension and format (valid STEP header, ISO-10303-21 format)
-  - [x] 6.2.5 Verify STEP file can be read back (completed)
+  - [ ] 6.2.5 Verify STEP file can be read back (REQUIRED - IN PROGRESS)
     - [x] Verify STEP file structure (ISO-10303-21 format, valid header, DATA section) ✓
     - [x] File size validated (130KB, reasonable for 2092 entities) ✓
-    - [x] Full OCCT reader test completed using STEPControl_Reader ✓
-    - [x] Shape successfully loaded and analyzed ✓
-    - [x] Shape statistics collected (faces, edges, vertices, shells, solids) ✓
-    - [ ] Optionally visualize in DRAW or other OCCT tool (optional)
-
-- [ ] 6.3 Create unit tests for JSON parsing (2-3 hours)
-  - [ ] 6.3.1 Test topology element parsers
-    - [ ] Test parseVertex with valid and invalid data
-    - [ ] Test parseEdge with valid and invalid data
-    - [ ] Test parseHalfEdge with curve_data and without
-    - [ ] Test parseLoop with closed and open loops
-    - [ ] Test parseFace with single and multiple loops
-    - [ ] Test parseShell with single and multiple faces
-    - [ ] Test parseBody with single and multiple shells
-  - [ ] 6.3.2 Test geometry element parsers
-    - [ ] Test B-spline surface parsing (control points, knots, degrees)
-    - [ ] Test B-spline curve parsing (2D parametric)
-    - [ ] Test rational vs non-rational surfaces
-    - [ ] Test validation of geometry data dimensions
-  - [ ] 6.3.3 Test error handling
-    - [ ] Test malformed JSON (missing fields, wrong types)
-    - [ ] Test invalid topology references (non-existent IDs)
-    - [ ] Test invalid geometry data (wrong dimensions, invalid knots)
-
-- [ ] 6.4 Create unit tests for geometry conversion (2-3 hours)
-  - [ ] 6.4.1 Test B-spline surface conversion
-    - [ ] Test control point reshaping (flat array → 2D grid)
-    - [ ] Test knot multiplicity computation for surfaces
-    - [ ] Test rational vs non-rational surface creation
-  - [ ] 6.4.2 Test B-spline curve conversion
-    - [ ] Test 2D curve conversion (Geom2d_BSplineCurve)
-    - [ ] Test 3D curve conversion via surface evaluation
-    - [ ] Test parameter range handling
-  - [ ] 6.4.3 Test knot multiplicity computation
-    - [ ] Test with unique knots (multiplicity = 1 for internal)
-    - [ ] Test with repeated knots
-    - [ ] Test first/last knot multiplicities (degree + 1)
-    - [ ] Test edge cases (insufficient knots, invalid degree)
-
-- [ ] 6.5 Create unit tests for topology conversion (2-3 hours)
-  - [ ] 6.5.1 Test basic conversions
-    - [ ] Test vertex conversion and caching
-    - [ ] Test edge conversion from half-edges
-    - [ ] Test wire conversion from loops
-    - [ ] Test face conversion with outer and inner loops
-    - [ ] Test shell conversion
-    - [ ] Test body conversion (solid vs compound)
-  - [ ] 6.5.2 Test edge cases
-    - [ ] Test degenerate edges (same start/end vertex)
-    - [ ] Test open loops (should fail gracefully)
-    - [ ] Test face with no loops (use surface domain)
-  - [ ] 6.5.3 Test orientation handling
-    - [ ] Test CCW orientation convention
-    - [ ] Test is_surface_normal_same flag handling
-    - [ ] Verify right-hand rule is respected
-
-- [ ] 6.6 Create additional integration tests (2 hours)
-  - [ ] 6.6.1 Test with minimal test cases
-    - [ ] Create simple box JSON (single face, single loop)
-    - [ ] Create cylinder JSON (multiple faces, closed shell)
-    - [ ] Verify both convert successfully to STEP
-  - [ ] 6.6.2 Test edge cases
-    - [ ] Test degenerate edges (should handle or fail gracefully)
-    - [ ] Test open loops (should fail with clear error)
-    - [ ] Test invalid topology (missing references)
-  - [ ] 6.6.3 Verify STEP file round-trip
-    - [ ] Generate STEP from JSON
-    - [ ] Read STEP back with OCCT
-    - [ ] Compare basic shape properties
-    - [ ] Optionally export back to JSON and compare
-
-## 7. Documentation (Estimated: 4-6 hours)
-
-- [ ] 7.1 Write user documentation (2-3 hours)
-  - Command-line tool usage
-  - JSON format specification
-  - Examples and use cases
-
-- [ ] 7.2 Write API documentation (2-3 hours)
-  - C++ API reference for converter classes
-  - Code examples for programmatic use
-  - Integration guide for external projects
+    - [ ] **CRITICAL**: Generated STEP file is invalid - cannot be read by OCCT or other tools
+    - [ ] Fix test program crash to enable error reporting from `STEPControl_Reader`
+    - [ ] Successfully read STEP file using `STEPControl_Reader::ReadFile()` (status must be `IFSelect_RetDone`)
+    - [ ] Report all check messages using `PrintCheckLoad()` and `Interface_CheckIterator`
+    - [ ] Identify specific errors in generated STEP file (entity numbers, error types, problematic structures)
+    - [ ] Fix STEP file generation based on OCCT reader error reports
+    - [ ] Re-verify until file can be successfully read by OCCT
+    - [ ] Transfer shapes and verify basic properties (faces, edges, vertices)
+    - [ ] Verify file can be read by other STEP viewers/tools (FreeCAD, OpenSCAD, etc.)
 
 ## 8. Integration and Polish (Estimated: 4-6 hours)
 
@@ -264,6 +191,7 @@
   - Review code quality
   - Optimize performance if needed
   - Fix any issues found
+  - Ensure STEP file generation produces valid files that can be read by OCCT
 
 ## Current Status Summary
 
@@ -281,11 +209,18 @@
 **Known Issues**:
 - Some curves in test JSON have only 1 control point (invalid for B-splines) - handled gracefully by creating straight edges
 - Some faces failed conversion due to invalid curve data - conversion continues with remaining valid faces
-- Round-trip verification: STEP file structure fully validated (ISO-10303-21 compliant, 2,092 entities, proper format). OCCT reader test program compiled but has runtime dependency issues - file structure validation confirms valid STEP format that can be read by third-party tools.
+- **CRITICAL**: Generated STEP file is invalid - cannot be read by OCCT or other STEP viewers/tools
+  - Test program crashes during `ReadFile()` (SIGSEGV) - needs to be fixed to get error messages
+  - File structure appears valid (ISO-10303-21 format, proper header/DATA sections, 2,092 entities)
+  - But file cannot be parsed/read by OCCT's `STEPControl_Reader` or other tools
+  - **REQUIRED**: Must fix STEP file generation to produce valid files that can be read back
+  - **REQUIRED**: Must use OCCT's `PrintCheckLoad()` and `Interface_CheckIterator` to identify specific errors
 
-**Next Steps**:
-1. Verify STEP file round-trip (read back with OCCT)
-2. Add unit tests for JSON parsing and geometry conversion
-3. Add integration tests
-4. Write user documentation
+**Next Steps** (PRIORITY ORDER):
+1. **URGENT**: Fix STEP file generation to produce valid files
+   - Debug why generated STEP file cannot be read by OCCT
+   - Fix test program crash to get detailed error messages
+   - Use OCCT's `PrintCheckLoad()` and `Interface_CheckIterator` to identify specific errors
+   - Fix all reported errors until file can be successfully read
+2. Verify STEP file round-trip (read back with OCCT) - REQUIRED before completion
 

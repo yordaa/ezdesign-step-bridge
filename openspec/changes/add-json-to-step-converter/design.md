@@ -386,23 +386,13 @@ Bottlenecks:
 
 ## Testing Strategy
 
-### Unit Tests
+### Testing Approach
 
-1. **JSON Parsing**: Test each topology element parser
-2. **Geometry Conversion**: Test B-spline surface/curve conversion
-3. **Topology Conversion**: Test each conversion level (vertex → edge → wire → face)
-
-### Integration Tests
-
-1. **End-to-End**: JSON → STEP → Read back with OCCT
-2. **Round-Trip**: Convert, export, import, compare
-
-### Test Data
-
-- Simple box (single body, single shell, 6 faces)
-- Complex model with multiple shells
-- Model with holes (inner loops)
-- Model with B-spline surfaces
+**Note**: Unit tests and documentation are not required for this feature. Verification is performed through the STEP file round-trip test using OCCT's `STEPControl_Reader`:
+- Generate STEP file from JSON
+- Read STEP file back using `STEPControl_Reader::ReadFile()`
+- Report all check messages using `PrintCheckLoad()` and `Interface_CheckIterator`
+- Verify file can be successfully read and shapes can be transferred
 
 ## Dependencies
 
@@ -439,6 +429,36 @@ Bottlenecks:
 - Support for other JSON formats
 - Support for reading STEP and converting to JSON
 - Support for other export formats (IGES, BREP)
+
+## STEP File Verification (REQUIRED)
+
+### Requirement
+All generated STEP files MUST be verified using OCCT's `STEPControl_Reader` before being considered valid. The verification process must:
+1. Successfully read the STEP file using `STEPControl_Reader::ReadFile()`
+2. Report all check messages using `PrintCheckLoad()` and `Interface_CheckIterator`
+3. Successfully transfer shapes using `TransferRoots()`
+4. Identify and report any errors at the entity level
+
+### Error Reporting
+When verification fails, the system must report:
+- Read status (`IFSelect_RetDone`, `IFSelect_RetError`, `IFSelect_RetFail`)
+- Entity-level error messages from `PrintCheckLoad()`
+- Detailed check messages from `Interface_CheckIterator`
+- Entity numbers/types with errors
+- Error categories (syntax, structure, geometry, references)
+
+### Implementation
+A test program (`test_step_roundtrip`) is provided to perform verification. This program:
+- Uses `STEPControl_Reader` to read generated STEP files
+- Reports detailed error messages if reading fails
+- Validates that shapes can be transferred and analyzed
+- **Current Status**: Program crashes during `ReadFile()` - needs to be fixed to properly report errors
+
+### Integration with json2step
+The `json2step` tool should optionally verify generated STEP files:
+- Add `--verify` flag to enable verification after export
+- Report verification results (success or detailed errors)
+- Exit with non-zero code if verification fails
 
 ## Resolved Decisions
 
