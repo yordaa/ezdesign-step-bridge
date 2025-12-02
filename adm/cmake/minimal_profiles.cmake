@@ -1,10 +1,23 @@
 # Minimal build profiles for OCCT
 # Each profile defines a set of modules optimized for specific use cases
 
+# Profile: step-export-minimal
+# Purpose: STEP file import/export functionality (shape-based only, no CAF)
+# Modules: FoundationClasses, ModelingData, ModelingAlgorithms, DataExchange
+# Note: Excludes ApplicationFramework (CAF) for minimal size
+# API: STEPControl_Reader/Writer (shape-based), no STEPCAFControl_Reader/Writer
+set (MINIMAL_PROFILE_step-export-minimal_MODULES
+  FoundationClasses
+  ModelingData
+  ModelingAlgorithms
+  DataExchange
+)
+
 # Profile: step-export
-# Purpose: STEP file import/export functionality only
+# Purpose: STEP file import/export functionality with full CAF support
 # Modules: FoundationClasses, ModelingData, ModelingAlgorithms, ApplicationFramework, DataExchange
-# Note: ApplicationFramework is required as DataExchange depends on it
+# Note: ApplicationFramework is required for document-based STEP operations
+# API: Both STEPControl_Reader/Writer and STEPCAFControl_Reader/Writer available
 set (MINIMAL_PROFILE_step-export_MODULES
   FoundationClasses
   ModelingData
@@ -82,7 +95,7 @@ function (GET_MINIMAL_PROFILE_MODULES PROFILE_NAME RESULT_MODULES)
   elseif (DEFINED MINIMAL_PROFILE_${PROFILE_NAME}_MODULES)
     set (${RESULT_MODULES} ${MINIMAL_PROFILE_${PROFILE_NAME}_MODULES} PARENT_SCOPE)
   else()
-    message (FATAL_ERROR "Unknown minimal build profile: ${PROFILE_NAME}. Available profiles: step-export, geometry-only, data-exchange, custom")
+    message (FATAL_ERROR "Unknown minimal build profile: ${PROFILE_NAME}. Available profiles: step-export-minimal, step-export, geometry-only, data-exchange, custom")
   endif()
 endfunction()
 

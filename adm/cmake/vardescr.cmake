@@ -135,8 +135,10 @@ automatically resolved and included.")
 
 set (BUILD_MINIMAL_PROFILE_DESCR
 "Select a predefined minimal build profile. Available profiles:
-- step-export: STEP file import/export only (FoundationClasses, ModelingData,
-  ModelingAlgorithms, DataExchange with TKDESTEP)
+- step-export-minimal: STEP file import/export (shape-based only, no CAF)
+  (FoundationClasses, ModelingData, ModelingAlgorithms, DataExchange)
+- step-export: STEP file import/export with full CAF support (recommended)
+  (FoundationClasses, ModelingData, ModelingAlgorithms, ApplicationFramework, DataExchange)
 - geometry-only: Core geometry operations without data exchange or visualization
 - data-exchange: All data exchange formats (STEP, IGES, STL, VRML, OBJ, PLY, etc.)
 - custom: Use BUILD_MINIMAL_CUSTOM_MODULES to specify custom module list")

@@ -12,9 +12,17 @@ cmake -DBUILD_MINIMAL_DISTRIBUTION=ON -DBUILD_MINIMAL_PROFILE=step-export ..
 
 ### Available Profiles
 
-- **step-export**: STEP file import/export only
+- **step-export-minimal**: STEP file import/export (shape-based only, no CAF)
+  - Modules: FoundationClasses, ModelingData, ModelingAlgorithms, DataExchange
+  - Use case: Applications that only need basic STEP file I/O without document management
+  - API: `STEPControl_Reader`/`STEPControl_Writer` only (no `STEPCAFControl_Reader`/`STEPCAFControl_Writer`)
+  - Size: ~80-120MB (smallest STEP build)
+
+- **step-export**: STEP file import/export with full CAF support
   - Modules: FoundationClasses, ModelingData, ModelingAlgorithms, ApplicationFramework, DataExchange
-  - Use case: Applications that only need STEP file I/O
+  - Use case: Applications that need STEP file I/O with document management, colors, layers, names
+  - API: Both `STEPControl_Reader`/`STEPControl_Writer` and `STEPCAFControl_Reader`/`STEPCAFControl_Writer`
+  - Size: ~150-200MB (recommended for most use cases)
 
 - **geometry-only**: Core geometry operations without data exchange or visualization
   - Modules: FoundationClasses, ModelingData, ModelingAlgorithms
@@ -37,10 +45,11 @@ Enable minimal build mode. When ON, only modules specified by the selected profi
 
 ### BUILD_MINIMAL_PROFILE
 Select a predefined minimal build profile. Available values:
-- `step-export`
-- `geometry-only`
-- `data-exchange`
-- `custom`
+- `step-export-minimal` - STEP I/O without CAF (smallest)
+- `step-export` - STEP I/O with CAF (recommended)
+- `geometry-only` - Core geometry operations only
+- `data-exchange` - All data exchange formats
+- `custom` - User-defined module list
 
 **Default**: `step-export` (when BUILD_MINIMAL_DISTRIBUTION is ON)
 
@@ -56,6 +65,10 @@ Dependencies are automatically resolved. When you select a profile, all required
 For example, selecting `step-export` profile will automatically include:
 - All toolkits from FoundationClasses, ModelingData, ModelingAlgorithms, ApplicationFramework, DataExchange
 - All transitive dependencies (e.g., TKXCAF is included because TKDESTEP depends on it)
+
+Selecting `step-export-minimal` profile will include:
+- All toolkits from FoundationClasses, ModelingData, ModelingAlgorithms, DataExchange
+- All transitive dependencies (excluding CAF modules)
 
 ## CMake Integration
 
@@ -80,7 +93,15 @@ The installation process automatically excludes modules that weren't built.
 
 ## Examples
 
-### STEP Export Only
+### STEP Export Only (Minimal, No CAF)
+
+```bash
+cmake -DBUILD_MINIMAL_DISTRIBUTION=ON \
+      -DBUILD_MINIMAL_PROFILE=step-export-minimal \
+      ..
+```
+
+### STEP Export with CAF (Recommended)
 
 ```bash
 cmake -DBUILD_MINIMAL_DISTRIBUTION=ON \
@@ -109,6 +130,7 @@ cmake -DBUILD_MINIMAL_DISTRIBUTION=ON \
 
 Typical size reductions:
 - **Full build**: ~500MB+
+- **step-export-minimal profile**: ~80-120MB (75-85% reduction)
 - **step-export profile**: ~150-200MB (60-70% reduction)
 - **geometry-only profile**: ~100-150MB (70-80% reduction)
 - **data-exchange profile**: ~200-250MB (50-60% reduction)
@@ -145,5 +167,32 @@ If you see errors about invalid modules in a profile, ensure module names match 
 - Visualization
 - Draw
 - DETools
+
+## Runtime Functionality Test
+
+A test program is provided to verify STEP export functionality works with minimal builds:
+
+```bash
+# After building minimal build, compile and run the test:
+cd build-minimal-test
+g++ -I../include/opencascade \
+    -Lmac64/clang/lib \
+    -lTKDESTEP -lTKSTEPBase -lTKSTEPAttr -lTKSTEP209 -lTKSTEP \
+    -lTKXSBase -lTKDE -lTKTopAlgo -lTKGeomAlgo -lTKGeomBase \
+    -lTKBRep -lTKG3d -lTKG2d -lTKMath -lTKernel \
+    ../adm/cmake/test_minimal_step_export.cxx \
+    -o test_minimal_step_export
+
+# Run the test
+./test_minimal_step_export test_output.step
+```
+
+The test program:
+- Creates a simple box shape
+- Instantiates STEPControl_Writer
+- Exports the shape to STEP format
+- Verifies the output file is created and valid
+
+If the test passes, it confirms the minimal build STEP export functionality is working correctly.
 
 

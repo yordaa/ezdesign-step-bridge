@@ -10,6 +10,7 @@ CAD applications often require only a subset of OCCT functionality (e.g., STEP f
 - **ADDED**: Minimal distribution packaging script that creates `bin/`, `lib/`, `inc/` structure
 - **ADDED**: CMake config file generation for minimal builds (enables `find_package(OpenCASCADE)`)
 - **ADDED**: Documentation for creating custom minimal distributions
+- **ADDED**: Runtime functionality test program to verify STEP export/import works with minimal builds
 - **MODIFIED**: Build system to support selective module inclusion based on profile
 - **MODIFIED**: Installation process to respect minimal build configuration
 

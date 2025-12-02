@@ -398,7 +398,7 @@ if (BUILD_MINIMAL_DISTRIBUTION)
   if (NOT DEFINED BUILD_MINIMAL_PROFILE)
     set (BUILD_MINIMAL_PROFILE "step-export" CACHE STRING "${BUILD_MINIMAL_PROFILE_DESCR}")
   endif()
-  set_property(CACHE BUILD_MINIMAL_PROFILE PROPERTY STRINGS "step-export" "geometry-only" "data-exchange" "custom")
+  set_property(CACHE BUILD_MINIMAL_PROFILE PROPERTY STRINGS "step-export-minimal" "step-export" "geometry-only" "data-exchange" "custom")
   
   # Custom modules option (only used when profile is 'custom')
   if ("${BUILD_MINIMAL_PROFILE}" STREQUAL "custom")
