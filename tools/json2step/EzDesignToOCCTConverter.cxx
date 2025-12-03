@@ -40,8 +40,6 @@
 #include <GeomAPI_Interpolate.hxx>
 #include <GeomAPI_ProjectPointOnSurf.hxx>
 #include <Geom2d_Line.hxx>
-#include <Geom2d_TrimmedCurve.hxx>
-#include <Geom2dConvert.hxx>
 #include <gp_Vec2d.hxx>
 #include <gp_Dir2d.hxx>
 #include <sstream>
@@ -366,36 +364,14 @@ TopoDS_Edge EzDesignToOCCTConverter::convertHalfEdge(
         return TopoDS_Edge();
       }
       
-      // Convert Geom2d_Line to Geom2d_BSplineCurve so we can use convertCurve3D
-      Handle(Geom2d_TrimmedCurve) trimmedLine = new Geom2d_TrimmedCurve(line2d, 0.0, paramDist);
-      Handle(Geom2d_BSplineCurve) line2dBSpline = Geom2dConvert::CurveToBSplineCurve(trimmedLine);
-      
-      if (line2dBSpline.IsNull()) {
-        addError("HalfEdge " + std::to_string(theHalfEdge.id) + ": Failed to convert 2D line to BSpline");
-        return TopoDS_Edge();
-      }
-      
-      // Evaluate the 2D curve on the surface to get the 3D curve
-      Handle(Geom_BSplineCurve) curve3d = convertCurve3D(line2dBSpline, theSurface, 0.0, paramDist);
-      if (curve3d.IsNull()) {
-        addError("HalfEdge " + std::to_string(theHalfEdge.id) + ": Failed to convert 2D line to 3D curve on surface");
-        return TopoDS_Edge();
-      }
-      
-      // Create edge from the 3D curve (which follows the surface)
-      BRepBuilderAPI_MakeEdge edgeMaker(curve3d, vStart, vEnd);
+      // Create edge directly from pcurve and surface with vertices (no 3D curve needed)
+      // OCCT's STEP writer will compute the 3D curve automatically if needed
+      BRepBuilderAPI_MakeEdge edgeMaker(line2d, theSurface, vStart, vEnd, 0.0, paramDist);
       if (!edgeMaker.IsDone()) {
-        addError("HalfEdge " + std::to_string(theHalfEdge.id) + ": Failed to create edge from 3D curve");
+        addError("HalfEdge " + std::to_string(theHalfEdge.id) + ": Failed to create edge from pcurve");
         return TopoDS_Edge();
       }
-      TopoDS_Edge edge = edgeMaker.Edge();
-      
-      // Attach the generated 2D curve to the edge
-      BRep_Builder builder;
-      TopLoc_Location identityLoc;
-      builder.UpdateEdge(edge, line2dBSpline, theSurface, identityLoc, Precision::Confusion());
-      
-      return edge;
+      return edgeMaker.Edge();
     }
     else {
       // Fallback: create straight edge without pcurve (should not happen for edges on surfaces)
@@ -429,31 +405,14 @@ TopoDS_Edge EzDesignToOCCTConverter::convertHalfEdge(
   double uMin = curveData.basis.bounds.minimum;
   double uMax = curveData.basis.bounds.maximum;
 
-  // 6. Create 3D curve by sampling 2D curve on surface
-  Handle(Geom_BSplineCurve) curve3d = convertCurve3D(curve2d, theSurface, uMin, uMax);
-  if (curve3d.IsNull()) {
-    addError("HalfEdge " + std::to_string(theHalfEdge.id) + ": Failed to convert 3D curve");
-    return TopoDS_Edge();
-  }
-
-  // 7. Create edge from 3D curve
-  BRepBuilderAPI_MakeEdge edgeMaker(curve3d, vStart, vEnd);
+  // 6. Create edge directly from pcurve and surface with vertices (no 3D curve needed)
+  // OCCT's STEP writer will compute the 3D curve automatically if needed
+  BRepBuilderAPI_MakeEdge edgeMaker(curve2d, theSurface, vStart, vEnd, uMin, uMax);
   if (!edgeMaker.IsDone()) {
-    addError("HalfEdge " + std::to_string(theHalfEdge.id) + ": Failed to create edge from 3D curve");
+    addError("HalfEdge " + std::to_string(theHalfEdge.id) + ": Failed to create edge from pcurve");
     return TopoDS_Edge();
   }
-
-  TopoDS_Edge edge = edgeMaker.Edge();
-
-  // 8. Attach 2D curve to edge for face parameterization
-  // Note: The face will be created later, but we attach the 2D curve now
-  // using the surface and an identity location
-  // This ensures SURFACE_CURVE will have at least one pcurve in STEP export
-  BRep_Builder builder;
-  TopLoc_Location identityLoc;  // Identity location
-  builder.UpdateEdge(edge, curve2d, theSurface, identityLoc, Precision::Confusion());
-
-  return edge;
+  return edgeMaker.Edge();
 }
 
 //=======================================================================
