@@ -40,6 +40,8 @@
 #include <GeomAPI_Interpolate.hxx>
 #include <GeomAPI_ProjectPointOnSurf.hxx>
 #include <Geom2d_Line.hxx>
+#include <Geom2d_TrimmedCurve.hxx>
+#include <Geom2dConvert.hxx>
 #include <gp_Vec2d.hxx>
 #include <gp_Dir2d.hxx>
 #include <sstream>
@@ -357,10 +359,33 @@ TopoDS_Edge EzDesignToOCCTConverter::convertHalfEdge(
       gp_Vec2d dir(uv2.X() - uv1.X(), uv2.Y() - uv1.Y());
       Handle(Geom2d_Line) line2d = new Geom2d_Line(uv1, gp_Dir2d(dir));
       
-      // Create 3D edge
-      BRepBuilderAPI_MakeEdge edgeMaker(p1, p2);
+      // Determine parameter range for the line (distance in parametric space)
+      Standard_Real paramDist = dir.Magnitude();
+      if (paramDist < Precision::Confusion()) {
+        addError("HalfEdge " + std::to_string(theHalfEdge.id) + ": Degenerate parametric line");
+        return TopoDS_Edge();
+      }
+      
+      // Convert Geom2d_Line to Geom2d_BSplineCurve so we can use convertCurve3D
+      Handle(Geom2d_TrimmedCurve) trimmedLine = new Geom2d_TrimmedCurve(line2d, 0.0, paramDist);
+      Handle(Geom2d_BSplineCurve) line2dBSpline = Geom2dConvert::CurveToBSplineCurve(trimmedLine);
+      
+      if (line2dBSpline.IsNull()) {
+        addError("HalfEdge " + std::to_string(theHalfEdge.id) + ": Failed to convert 2D line to BSpline");
+        return TopoDS_Edge();
+      }
+      
+      // Evaluate the 2D curve on the surface to get the 3D curve
+      Handle(Geom_BSplineCurve) curve3d = convertCurve3D(line2dBSpline, theSurface, 0.0, paramDist);
+      if (curve3d.IsNull()) {
+        addError("HalfEdge " + std::to_string(theHalfEdge.id) + ": Failed to convert 2D line to 3D curve on surface");
+        return TopoDS_Edge();
+      }
+      
+      // Create edge from the 3D curve (which follows the surface)
+      BRepBuilderAPI_MakeEdge edgeMaker(curve3d, vStart, vEnd);
       if (!edgeMaker.IsDone()) {
-        addError("HalfEdge " + std::to_string(theHalfEdge.id) + ": Failed to create straight edge");
+        addError("HalfEdge " + std::to_string(theHalfEdge.id) + ": Failed to create edge from 3D curve");
         return TopoDS_Edge();
       }
       TopoDS_Edge edge = edgeMaker.Edge();
@@ -368,7 +393,7 @@ TopoDS_Edge EzDesignToOCCTConverter::convertHalfEdge(
       // Attach the generated 2D curve to the edge
       BRep_Builder builder;
       TopLoc_Location identityLoc;
-      builder.UpdateEdge(edge, line2d, theSurface, identityLoc, Precision::Confusion());
+      builder.UpdateEdge(edge, line2dBSpline, theSurface, identityLoc, Precision::Confusion());
       
       return edge;
     }
