@@ -25,6 +25,7 @@
 #include <BRepBuilderAPI_MakeFace.hxx>
 #include <BRepBuilderAPI_MakeSolid.hxx>
 #include <BRep_Tool.hxx>
+#include <TopTools_ListOfShape.hxx>
 #include <Precision.hxx>
 #include <TopLoc_Location.hxx>
 #include <gp_Pnt.hxx>
@@ -37,6 +38,10 @@
 #include <TColStd_HArray1OfReal.hxx>
 #include <TColStd_Array1OfInteger.hxx>
 #include <GeomAPI_Interpolate.hxx>
+#include <GeomAPI_ProjectPointOnSurf.hxx>
+#include <Geom2d_Line.hxx>
+#include <gp_Vec2d.hxx>
+#include <gp_Dir2d.hxx>
 #include <sstream>
 
 //=======================================================================
@@ -168,14 +173,14 @@ TopoDS_Face EzDesignToOCCTConverter::convertFace(const EzFace& theFace)
     return TopoDS_Face();
   }
 
-  // 2. Create face from surface
-  BRepBuilderAPI_MakeFace faceMaker(surface, Precision::Confusion());
-
-  // 3. Add loops (wires)
+  // 2. Convert loops (wires) first
   // Note: Half-edges follow ezdesign convention:
   // - CCW w.r.t. face outward normal (right-hand rule)
   // - If is_surface_normal_same=true: CCW in UV domain
   // - If is_surface_normal_same=false: CW in UV domain (but CCW for face)
+  TopoDS_Wire outerWire;
+  TopTools_ListOfShape innerWires;
+  
   bool isFirstLoop = true;
   for (int loopId : theFace.loop_ids) {
     const EzLoop& loop = getLoop(loopId);
@@ -188,13 +193,29 @@ TopoDS_Face EzDesignToOCCTConverter::convertFace(const EzFace& theFace)
 
     if (isFirstLoop) {
       // First loop is outer boundary
-      faceMaker.Add(wire);
+      outerWire = wire;
       isFirstLoop = false;
     }
     else {
       // Subsequent loops are inner boundaries (holes)
-      faceMaker.Add(wire);
+      innerWires.Append(wire);
     }
+  }
+
+  if (outerWire.IsNull()) {
+    addError("Face " + std::to_string(theFace.id) + ": No outer boundary loop found");
+    return TopoDS_Face();
+  }
+
+  // 3. Create face from surface with outer wire
+  // This ensures we only have the wires we explicitly added, not the surface's natural boundaries
+  // Inside=true means the wire is the outer boundary (the face is inside the wire)
+  BRepBuilderAPI_MakeFace faceMaker(surface, outerWire, Standard_True);
+  
+  // 4. Add inner wires (holes) if any
+  TopTools_ListIteratorOfListOfShape innerIt(innerWires);
+  for (; innerIt.More(); innerIt.Next()) {
+    faceMaker.Add(TopoDS::Wire(innerIt.Value()));
   }
 
   if (!faceMaker.IsDone()) {
@@ -221,7 +242,6 @@ TopoDS_Wire EzDesignToOCCTConverter::convertLoop(
   // ezdesign convention: half-edges are CCW w.r.t. face outward normal (right-hand rule)
   int currentHeId = theLoop.half_edge_id;
   int startHeId = currentHeId;
-  bool isFirst = true;
   int maxIterations = 1000;  // Safety limit
   int iterations = 0;
 
@@ -247,7 +267,6 @@ TopoDS_Wire EzDesignToOCCTConverter::convertLoop(
 
     // Move to next half-edge
     currentHeId = halfEdge.next_id;
-    isFirst = false;
   } while (currentHeId != startHeId && currentHeId != 0);
 
   if (currentHeId != startHeId) {
@@ -273,6 +292,12 @@ TopoDS_Edge EzDesignToOCCTConverter::convertHalfEdge(
   const Handle(Geom_BSplineSurface)& theSurface,
   bool /*theIsSurfaceNormalSame*/)
 {
+  // 0. Skip conceptual half-edges (loop_id == 0 means conceptual only, no real meaning)
+  if (theHalfEdge.loop_id == 0) {
+    // This is a conceptual half-edge, should not create real topology
+    return TopoDS_Edge();
+  }
+
   // 1. Get start and end vertices
   const EzVertex& startVertex = getVertex(theHalfEdge.vertex_id);
   if (startVertex.id == 0) {
@@ -295,22 +320,71 @@ TopoDS_Edge EzDesignToOCCTConverter::convertHalfEdge(
   TopoDS_Vertex vStart = convertVertex(startVertex);
   TopoDS_Vertex vEnd = convertVertex(endVertex);
 
-  // 2. Check if curve_data exists and is valid
-  if (theHalfEdge.curve_data.control_points.data.empty() ||
-      theHalfEdge.curve_data.control_points.number_u_points < 2) {
-    // No curve data or insufficient control points - create straight edge
-    gp_Pnt p1(startVertex.position[0], startVertex.position[1], startVertex.position[2]);
-    gp_Pnt p2(endVertex.position[0], endVertex.position[1], endVertex.position[2]);
-    BRepBuilderAPI_MakeEdge edgeMaker(p1, p2);
-    if (!edgeMaker.IsDone()) {
-      addError("HalfEdge " + std::to_string(theHalfEdge.id) + ": Failed to create straight edge");
-      return TopoDS_Edge();
+  // 2. Get curve_data - try current half-edge first, then opposite if available
+  EzCurveData curveData = theHalfEdge.curve_data;
+  bool hasCurveData = !curveData.control_points.data.empty() &&
+                      curveData.control_points.number_u_points >= 2;
+
+  // If no curve_data, try opposite half-edge
+  if (!hasCurveData && theHalfEdge.opposite_id != 0) {
+    const EzHalfEdge& oppositeHe = getHalfEdge(theHalfEdge.opposite_id);
+    if (oppositeHe.id != 0 && !oppositeHe.curve_data.control_points.data.empty() &&
+        oppositeHe.curve_data.control_points.number_u_points >= 2) {
+      curveData = oppositeHe.curve_data;
+      hasCurveData = true;
     }
-    return edgeMaker.Edge();
   }
 
-  // 3. Convert 2D curve
-  Handle(Geom2d_BSplineCurve) curve2d = convertCurve2D(theHalfEdge.curve_data);
+  // 3. If still no curve_data, we need to generate a pcurve for edges on surfaces
+  // Create a straight 2D line in parametric space as fallback
+  if (!hasCurveData) {
+    // Generate a simple 2D line pcurve by projecting the 3D edge onto the surface
+    gp_Pnt p1(startVertex.position[0], startVertex.position[1], startVertex.position[2]);
+    gp_Pnt p2(endVertex.position[0], endVertex.position[1], endVertex.position[2]);
+    
+    // Project points onto surface to get parametric coordinates
+    Standard_Real u1, v1, u2, v2;
+    GeomAPI_ProjectPointOnSurf proj1(p1, theSurface);
+    GeomAPI_ProjectPointOnSurf proj2(p2, theSurface);
+    
+    if (proj1.NbPoints() > 0 && proj2.NbPoints() > 0) {
+      proj1.Parameters(1, u1, v1);
+      proj2.Parameters(1, u2, v2);
+      gp_Pnt2d uv1(u1, v1);
+      gp_Pnt2d uv2(u2, v2);
+      
+      // Create a 2D line in parametric space
+      gp_Vec2d dir(uv2.X() - uv1.X(), uv2.Y() - uv1.Y());
+      Handle(Geom2d_Line) line2d = new Geom2d_Line(uv1, gp_Dir2d(dir));
+      
+      // Create 3D edge
+      BRepBuilderAPI_MakeEdge edgeMaker(p1, p2);
+      if (!edgeMaker.IsDone()) {
+        addError("HalfEdge " + std::to_string(theHalfEdge.id) + ": Failed to create straight edge");
+        return TopoDS_Edge();
+      }
+      TopoDS_Edge edge = edgeMaker.Edge();
+      
+      // Attach the generated 2D curve to the edge
+      BRep_Builder builder;
+      TopLoc_Location identityLoc;
+      builder.UpdateEdge(edge, line2d, theSurface, identityLoc, Precision::Confusion());
+      
+      return edge;
+    }
+    else {
+      // Fallback: create straight edge without pcurve (should not happen for edges on surfaces)
+      BRepBuilderAPI_MakeEdge edgeMaker(p1, p2);
+      if (!edgeMaker.IsDone()) {
+        addError("HalfEdge " + std::to_string(theHalfEdge.id) + ": Failed to create straight edge");
+        return TopoDS_Edge();
+      }
+      return edgeMaker.Edge();
+    }
+  }
+
+  // 4. Convert 2D curve
+  Handle(Geom2d_BSplineCurve) curve2d = convertCurve2D(curveData);
   if (curve2d.IsNull()) {
     // Fallback to straight edge if curve conversion fails
     gp_Pnt p1(startVertex.position[0], startVertex.position[1], startVertex.position[2]);
@@ -326,18 +400,18 @@ TopoDS_Edge EzDesignToOCCTConverter::convertHalfEdge(
   // Note: ezdesign convention ensures half-edges are CCW w.r.t. face outward normal
   // The 2D curve orientation is already correct per this convention
 
-  // 4. Get parameter range
-  double uMin = theHalfEdge.curve_data.basis.bounds.minimum;
-  double uMax = theHalfEdge.curve_data.basis.bounds.maximum;
+  // 5. Get parameter range
+  double uMin = curveData.basis.bounds.minimum;
+  double uMax = curveData.basis.bounds.maximum;
 
-  // 5. Create 3D curve by sampling 2D curve on surface
+  // 6. Create 3D curve by sampling 2D curve on surface
   Handle(Geom_BSplineCurve) curve3d = convertCurve3D(curve2d, theSurface, uMin, uMax);
   if (curve3d.IsNull()) {
     addError("HalfEdge " + std::to_string(theHalfEdge.id) + ": Failed to convert 3D curve");
     return TopoDS_Edge();
   }
 
-  // 6. Create edge from 3D curve
+  // 7. Create edge from 3D curve
   BRepBuilderAPI_MakeEdge edgeMaker(curve3d, vStart, vEnd);
   if (!edgeMaker.IsDone()) {
     addError("HalfEdge " + std::to_string(theHalfEdge.id) + ": Failed to create edge from 3D curve");
@@ -346,9 +420,10 @@ TopoDS_Edge EzDesignToOCCTConverter::convertHalfEdge(
 
   TopoDS_Edge edge = edgeMaker.Edge();
 
-  // 7. Attach 2D curve to edge for face parameterization
+  // 8. Attach 2D curve to edge for face parameterization
   // Note: The face will be created later, but we attach the 2D curve now
   // using the surface and an identity location
+  // This ensures SURFACE_CURVE will have at least one pcurve in STEP export
   BRep_Builder builder;
   TopLoc_Location identityLoc;  // Identity location
   builder.UpdateEdge(edge, curve2d, theSurface, identityLoc, Precision::Confusion());

@@ -150,10 +150,10 @@ int main(int argc, char* argv[])
     
     if (!model.IsNull()) {
       std::cout << "\n=== MODEL CHECK MESSAGES ===" << std::endl;
-      Interface_CheckIterator checks = model->Check();
-      if (!checks.IsEmpty(Standard_False)) {
+      Handle(Interface_Check) globalCheck = model->GlobalCheck();
+      if (!globalCheck.IsNull() && (globalCheck->HasFailed() || globalCheck->HasWarnings())) {
         std::cerr << "Model has check messages (failures and/or warnings)" << std::endl;
-        checks.Print(std::cerr, Standard_False, 0);
+        globalCheck->Print(std::cerr, Standard_False);
       } else {
         std::cout << "No check messages from model." << std::endl;
       }

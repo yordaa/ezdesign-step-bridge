@@ -53,20 +53,20 @@ endif()
 add_executable(test_step_roundtrip test_step_roundtrip.cxx)
 # Link against required OCCT libraries for STEP reading
 # Note: Using library names without TK prefix (OCCT internal naming)
+# Link against shared libraries (.dylib on macOS)
 target_link_libraries(test_step_roundtrip PRIVATE
-  ${CMAKE_BINARY_DIR}/mac64/clang/lib/${CMAKE_STATIC_LIBRARY_PREFIX}TKSTEPControl${CMAKE_STATIC_LIBRARY_SUFFIX}
-  ${CMAKE_BINARY_DIR}/mac64/clang/lib/${CMAKE_STATIC_LIBRARY_PREFIX}TKSTEP${CMAKE_STATIC_LIBRARY_SUFFIX}
-  ${CMAKE_BINARY_DIR}/mac64/clang/lib/${CMAKE_STATIC_LIBRARY_PREFIX}TKXSBase${CMAKE_STATIC_LIBRARY_SUFFIX}
-  ${CMAKE_BINARY_DIR}/mac64/clang/lib/${CMAKE_STATIC_LIBRARY_PREFIX}TKDE${CMAKE_STATIC_LIBRARY_SUFFIX}
-  ${CMAKE_BINARY_DIR}/mac64/clang/lib/${CMAKE_STATIC_LIBRARY_PREFIX}TKBRep${CMAKE_STATIC_LIBRARY_SUFFIX}
-  ${CMAKE_BINARY_DIR}/mac64/clang/lib/${CMAKE_STATIC_LIBRARY_PREFIX}TKTopAlgo${CMAKE_STATIC_LIBRARY_SUFFIX}
-  ${CMAKE_BINARY_DIR}/mac64/clang/lib/${CMAKE_STATIC_LIBRARY_PREFIX}TKGeomBase${CMAKE_STATIC_LIBRARY_SUFFIX}
-  ${CMAKE_BINARY_DIR}/mac64/clang/lib/${CMAKE_STATIC_LIBRARY_PREFIX}TKGeomAlgo${CMAKE_STATIC_LIBRARY_SUFFIX}
-  ${CMAKE_BINARY_DIR}/mac64/clang/lib/${CMAKE_STATIC_LIBRARY_PREFIX}TKG3d${CMAKE_STATIC_LIBRARY_SUFFIX}
-  ${CMAKE_BINARY_DIR}/mac64/clang/lib/${CMAKE_STATIC_LIBRARY_PREFIX}TKG2d${CMAKE_STATIC_LIBRARY_SUFFIX}
-  ${CMAKE_BINARY_DIR}/mac64/clang/lib/${CMAKE_STATIC_LIBRARY_PREFIX}TKMath${CMAKE_STATIC_LIBRARY_SUFFIX}
-  ${CMAKE_BINARY_DIR}/mac64/clang/lib/${CMAKE_STATIC_LIBRARY_PREFIX}TKernel${CMAKE_STATIC_LIBRARY_SUFFIX}
-  ${CMAKE_BINARY_DIR}/mac64/clang/lib/${CMAKE_STATIC_LIBRARY_PREFIX}TKDESTEP${CMAKE_STATIC_LIBRARY_SUFFIX}
-  ${CMAKE_BINARY_DIR}/mac64/clang/lib/${CMAKE_STATIC_LIBRARY_PREFIX}TKCDF${CMAKE_STATIC_LIBRARY_SUFFIX}
+  ${CMAKE_BINARY_DIR}/mac64/clang/lib/libTKDESTEP.dylib
+  ${CMAKE_BINARY_DIR}/mac64/clang/lib/libTKSTEP.dylib
+  ${CMAKE_BINARY_DIR}/mac64/clang/lib/libTKXSBase.dylib
+  ${CMAKE_BINARY_DIR}/mac64/clang/lib/libTKDE.dylib
+  ${CMAKE_BINARY_DIR}/mac64/clang/lib/libTKBRep.dylib
+  ${CMAKE_BINARY_DIR}/mac64/clang/lib/libTKTopAlgo.dylib
+  ${CMAKE_BINARY_DIR}/mac64/clang/lib/libTKGeomBase.dylib
+  ${CMAKE_BINARY_DIR}/mac64/clang/lib/libTKGeomAlgo.dylib
+  ${CMAKE_BINARY_DIR}/mac64/clang/lib/libTKG3d.dylib
+  ${CMAKE_BINARY_DIR}/mac64/clang/lib/libTKG2d.dylib
+  ${CMAKE_BINARY_DIR}/mac64/clang/lib/libTKMath.dylib
+  ${CMAKE_BINARY_DIR}/mac64/clang/lib/libTKernel.dylib
+  ${CMAKE_BINARY_DIR}/mac64/clang/lib/libTKCDF.dylib
 )
 
