@@ -81,7 +81,7 @@ struct EzHalfEdge
 {
   int id;
   int edge_id;
-  int vertex_id;  // Start vertex
+  int vertex_id;  // End vertex
   int loop_id;
   int next_id;
   int previous_id;

@@ -102,12 +102,19 @@ private:
   const EzShell& getShell(int theId) const;
   const EzHalfEdge& getNextHalfEdge(int theId) const;
 
+  // Helper to add pcurve to existing edge (for edges shared between faces on different surfaces)
+  void addPCurveToEdge(
+    TopoDS_Edge& theEdge,
+    const EzHalfEdge& theHalfEdge,
+    const Handle(Geom_BSplineSurface)& theSurface);
+
   // Add error
   void addError(const std::string& theError);
 
 private:
   const EzDesignJsonReader& myReader;
-  std::map<int, TopoDS_Vertex> myVertexCache;  // Cache converted vertices
+  std::map<int, TopoDS_Vertex> myVertexMap;  // Map: JSON vertex_id → OCCT TopoDS_Vertex
+  std::map<int, TopoDS_Edge> myEdgeMap;      // Map: JSON edge_id → OCCT TopoDS_Edge
   std::vector<std::string> myErrors;
 };
 

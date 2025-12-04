@@ -26,6 +26,7 @@
 #include <BRepBuilderAPI_MakeSolid.hxx>
 #include <BRep_Tool.hxx>
 #include <TopTools_ListOfShape.hxx>
+#include <TopExp.hxx>
 #include <Precision.hxx>
 #include <TopLoc_Location.hxx>
 #include <gp_Pnt.hxx>
@@ -68,7 +69,8 @@ EzDesignToOCCTConverter::~EzDesignToOCCTConverter()
 TopoDS_Shape EzDesignToOCCTConverter::ConvertBody(const EzBody& theBody)
 {
   myErrors.clear();
-  myVertexCache.clear();
+  myVertexMap.clear();
+  myEdgeMap.clear();
 
   try {
     OCC_CATCH_SIGNALS
@@ -298,22 +300,43 @@ TopoDS_Edge EzDesignToOCCTConverter::convertHalfEdge(
     return TopoDS_Edge();
   }
 
+  // 0.5. Check if edge already exists in map (for shared edges)
+  int edgeId = theHalfEdge.edge_id;
+  auto edgeIt = myEdgeMap.find(edgeId);
+  if (edgeIt != myEdgeMap.end()) {
+    // Edge already exists - check if pcurve for this surface exists
+    TopoDS_Edge existingEdge = edgeIt->second;
+    
+    // Check if pcurve already exists for this surface
+    Standard_Real f, l;
+    Handle(Geom2d_Curve) existingPCurve = BRep_Tool::CurveOnSurface(existingEdge, theSurface, TopLoc_Location(), f, l);
+    
+    if (existingPCurve.IsNull()) {
+      // Pcurve missing for this surface - add it
+      addPCurveToEdge(existingEdge, theHalfEdge, theSurface);
+    }
+    
+    return existingEdge;
+  }
+
   // 1. Get start and end vertices
-  const EzVertex& startVertex = getVertex(theHalfEdge.vertex_id);
-  if (startVertex.id == 0) {
-    addError("HalfEdge " + std::to_string(theHalfEdge.id) + ": Start vertex " + std::to_string(theHalfEdge.vertex_id) + " not found");
-    return TopoDS_Edge();
-  }
-
-  const EzHalfEdge& nextHalfEdge = getNextHalfEdge(theHalfEdge.id);
-  if (nextHalfEdge.id == 0) {
-    addError("HalfEdge " + std::to_string(theHalfEdge.id) + ": Next half-edge not found");
-    return TopoDS_Edge();
-  }
-
-  const EzVertex& endVertex = getVertex(nextHalfEdge.vertex_id);
+  // vertex_id is the vertex this half-edge points to (end vertex)
+  const EzVertex& endVertex = getVertex(theHalfEdge.vertex_id);
   if (endVertex.id == 0) {
-    addError("HalfEdge " + std::to_string(theHalfEdge.id) + ": End vertex not found");
+    addError("HalfEdge " + std::to_string(theHalfEdge.id) + ": End vertex " + std::to_string(theHalfEdge.vertex_id) + " not found");
+    return TopoDS_Edge();
+  }
+
+  // Start vertex is the vertex the previous half-edge points to
+  const EzHalfEdge& previousHalfEdge = getHalfEdge(theHalfEdge.previous_id);
+  if (previousHalfEdge.id == 0) {
+    addError("HalfEdge " + std::to_string(theHalfEdge.id) + ": Previous half-edge not found");
+    return TopoDS_Edge();
+  }
+
+  const EzVertex& startVertex = getVertex(previousHalfEdge.vertex_id);
+  if (startVertex.id == 0) {
+    addError("HalfEdge " + std::to_string(theHalfEdge.id) + ": Start vertex " + std::to_string(previousHalfEdge.vertex_id) + " not found");
     return TopoDS_Edge();
   }
 
@@ -371,7 +394,9 @@ TopoDS_Edge EzDesignToOCCTConverter::convertHalfEdge(
         addError("HalfEdge " + std::to_string(theHalfEdge.id) + ": Failed to create edge from pcurve");
         return TopoDS_Edge();
       }
-      return edgeMaker.Edge();
+      TopoDS_Edge newEdge = edgeMaker.Edge();
+      myEdgeMap[edgeId] = newEdge;  // Store in map for sharing
+      return newEdge;
     }
     else {
       // Fallback: create straight edge without pcurve (should not happen for edges on surfaces)
@@ -380,7 +405,9 @@ TopoDS_Edge EzDesignToOCCTConverter::convertHalfEdge(
         addError("HalfEdge " + std::to_string(theHalfEdge.id) + ": Failed to create straight edge");
         return TopoDS_Edge();
       }
-      return edgeMaker.Edge();
+      TopoDS_Edge newEdge = edgeMaker.Edge();
+      myEdgeMap[edgeId] = newEdge;  // Store in map for sharing
+      return newEdge;
     }
   }
 
@@ -395,7 +422,9 @@ TopoDS_Edge EzDesignToOCCTConverter::convertHalfEdge(
       addError("HalfEdge " + std::to_string(theHalfEdge.id) + ": Failed to create fallback straight edge");
       return TopoDS_Edge();
     }
-    return edgeMaker.Edge();
+    TopoDS_Edge newEdge = edgeMaker.Edge();
+    myEdgeMap[edgeId] = newEdge;  // Store in map for sharing
+    return newEdge;
   }
 
   // Note: ezdesign convention ensures half-edges are CCW w.r.t. face outward normal
@@ -412,7 +441,84 @@ TopoDS_Edge EzDesignToOCCTConverter::convertHalfEdge(
     addError("HalfEdge " + std::to_string(theHalfEdge.id) + ": Failed to create edge from pcurve");
     return TopoDS_Edge();
   }
-  return edgeMaker.Edge();
+  TopoDS_Edge newEdge = edgeMaker.Edge();
+  myEdgeMap[edgeId] = newEdge;  // Store in map for sharing
+  return newEdge;
+}
+
+//=======================================================================
+// function : addPCurveToEdge
+// purpose  : Add pcurve to existing edge (for edges shared between faces on different surfaces)
+//=======================================================================
+void EzDesignToOCCTConverter::addPCurveToEdge(
+  TopoDS_Edge& theEdge,
+  const EzHalfEdge& theHalfEdge,
+  const Handle(Geom_BSplineSurface)& theSurface)
+{
+  // 1. Get curve_data - try current half-edge first, then opposite if available
+  EzCurveData curveData = theHalfEdge.curve_data;
+  bool hasCurveData = !curveData.control_points.data.empty() &&
+                      curveData.control_points.number_u_points >= 2;
+
+  // If no curve_data, try opposite half-edge
+  if (!hasCurveData && theHalfEdge.opposite_id != 0) {
+    const EzHalfEdge& oppositeHe = getHalfEdge(theHalfEdge.opposite_id);
+    if (oppositeHe.id != 0 && !oppositeHe.curve_data.control_points.data.empty() &&
+        oppositeHe.curve_data.control_points.number_u_points >= 2) {
+      curveData = oppositeHe.curve_data;
+      hasCurveData = true;
+    }
+  }
+
+  Handle(Geom2d_Curve) pcurve;
+  Standard_Real uMin, uMax;
+
+  if (hasCurveData) {
+    // Convert 2D curve from curve_data
+    Handle(Geom2d_BSplineCurve) curve2d = convertCurve2D(curveData);
+    if (!curve2d.IsNull()) {
+      pcurve = curve2d;
+      uMin = curveData.basis.bounds.minimum;
+      uMax = curveData.basis.bounds.maximum;
+    }
+  }
+
+  // If still no pcurve, generate a straight 2D line by projecting edge endpoints
+  if (pcurve.IsNull()) {
+    // Get edge vertices
+    TopoDS_Vertex vStart, vEnd;
+    TopExp::Vertices(theEdge, vStart, vEnd);
+    gp_Pnt p1 = BRep_Tool::Pnt(vStart);
+    gp_Pnt p2 = BRep_Tool::Pnt(vEnd);
+
+    // Project points onto surface to get parametric coordinates
+    Standard_Real u1, v1, u2, v2;
+    GeomAPI_ProjectPointOnSurf proj1(p1, theSurface);
+    GeomAPI_ProjectPointOnSurf proj2(p2, theSurface);
+
+    if (proj1.NbPoints() > 0 && proj2.NbPoints() > 0) {
+      proj1.Parameters(1, u1, v1);
+      proj2.Parameters(1, u2, v2);
+      gp_Pnt2d uv1(u1, v1);
+      gp_Pnt2d uv2(u2, v2);
+
+      // Create a 2D line in parametric space
+      gp_Vec2d dir(uv2.X() - uv1.X(), uv2.Y() - uv1.Y());
+      Handle(Geom2d_Line) line2d = new Geom2d_Line(uv1, gp_Dir2d(dir));
+
+      pcurve = line2d;
+      uMin = 0.0;
+      uMax = dir.Magnitude();
+    } else {
+      addError("HalfEdge " + std::to_string(theHalfEdge.id) + ": Failed to project edge endpoints for pcurve");
+      return;
+    }
+  }
+
+  // Add pcurve to edge using BRep_Builder
+  BRep_Builder builder;
+  builder.UpdateEdge(theEdge, pcurve, theSurface, TopLoc_Location(), Precision::Confusion());
+  builder.Range(theEdge, theSurface, TopLoc_Location(), uMin, uMax);
 }
 
 //=======================================================================
@@ -421,9 +527,9 @@ TopoDS_Edge EzDesignToOCCTConverter::convertHalfEdge(
 //=======================================================================
 TopoDS_Vertex EzDesignToOCCTConverter::convertVertex(const EzVertex& theVertex)
 {
-  // Check cache first
-  auto it = myVertexCache.find(theVertex.id);
-  if (it != myVertexCache.end()) {
+  // Check if this vertex has already been converted
+  auto it = myVertexMap.find(theVertex.id);
+  if (it != myVertexMap.end()) {
     return it->second;
   }
 
@@ -436,7 +542,7 @@ TopoDS_Vertex EzDesignToOCCTConverter::convertVertex(const EzVertex& theVertex)
   }
 
   TopoDS_Vertex vertex = vertexMaker.Vertex();
-  myVertexCache[theVertex.id] = vertex;
+  myVertexMap[theVertex.id] = vertex;
   return vertex;
 }
 
