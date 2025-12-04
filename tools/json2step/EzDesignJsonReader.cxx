@@ -75,8 +75,16 @@ Standard_Boolean EzDesignJsonReader::ReadFile(const TCollection_AsciiString& the
     file >> jsonData;
     file.close();
 
+    // Extract data from "subd" entry if present (data.db.subd structure)
+    json dataToParse = jsonData;
+    if (jsonData.contains("data") && jsonData["data"].is_object() &&
+        jsonData["data"].contains("db") && jsonData["data"]["db"].is_object() &&
+        jsonData["data"]["db"].contains("subd") && jsonData["data"]["db"]["subd"].is_object()) {
+      dataToParse = jsonData["data"]["db"]["subd"];
+    }
+
     // Parse JSON
-    if (!parseJson(jsonData)) {
+    if (!parseJson(dataToParse)) {
       return Standard_False;
     }
 
