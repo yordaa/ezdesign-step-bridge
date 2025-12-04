@@ -316,7 +316,7 @@ TopoDS_Edge EzDesignToOCCTConverter::convertHalfEdge(
       addPCurveToEdge(existingEdge, theHalfEdge, theSurface);
     }
     
-    return existingEdge;
+    return TopoDS::Edge(existingEdge.Reversed());
   }
 
   // 1. Get start and end vertices
@@ -345,71 +345,6 @@ TopoDS_Edge EzDesignToOCCTConverter::convertHalfEdge(
 
   // 2. Get curve_data - try current half-edge first, then opposite if available
   EzCurveData curveData = theHalfEdge.curve_data;
-  bool hasCurveData = !curveData.control_points.data.empty() &&
-                      curveData.control_points.number_v_points >= 2;
-
-  // If no curve_data, try opposite half-edge
-  if (!hasCurveData && theHalfEdge.opposite_id != 0) {
-    const EzHalfEdge& oppositeHe = getHalfEdge(theHalfEdge.opposite_id);
-    if (oppositeHe.id != 0 && !oppositeHe.curve_data.control_points.data.empty() &&
-        oppositeHe.curve_data.control_points.number_v_points >= 2) {
-      curveData = oppositeHe.curve_data;
-      hasCurveData = true;
-    }
-  }
-
-  // 3. If still no curve_data, we need to generate a pcurve for edges on surfaces
-  // Create a straight 2D line in parametric space as fallback
-  if (!hasCurveData) {
-    // Generate a simple 2D line pcurve by projecting the 3D edge onto the surface
-    gp_Pnt p1(startVertex.position[0], startVertex.position[1], startVertex.position[2]);
-    gp_Pnt p2(endVertex.position[0], endVertex.position[1], endVertex.position[2]);
-    
-    // Project points onto surface to get parametric coordinates
-    Standard_Real u1, v1, u2, v2;
-    GeomAPI_ProjectPointOnSurf proj1(p1, theSurface);
-    GeomAPI_ProjectPointOnSurf proj2(p2, theSurface);
-    
-    if (proj1.NbPoints() > 0 && proj2.NbPoints() > 0) {
-      proj1.Parameters(1, u1, v1);
-      proj2.Parameters(1, u2, v2);
-      gp_Pnt2d uv1(u1, v1);
-      gp_Pnt2d uv2(u2, v2);
-      
-      // Create a 2D line in parametric space
-      gp_Vec2d dir(uv2.X() - uv1.X(), uv2.Y() - uv1.Y());
-      Handle(Geom2d_Line) line2d = new Geom2d_Line(uv1, gp_Dir2d(dir));
-      
-      // Determine parameter range for the line (distance in parametric space)
-      Standard_Real paramDist = dir.Magnitude();
-      if (paramDist < Precision::Confusion()) {
-        addError("HalfEdge " + std::to_string(theHalfEdge.id) + ": Degenerate parametric line");
-        return TopoDS_Edge();
-      }
-      
-      // Create edge directly from pcurve and surface with vertices (no 3D curve needed)
-      // OCCT's STEP writer will compute the 3D curve automatically if needed
-      BRepBuilderAPI_MakeEdge edgeMaker(line2d, theSurface, vStart, vEnd, 0.0, paramDist);
-      if (!edgeMaker.IsDone()) {
-        addError("HalfEdge " + std::to_string(theHalfEdge.id) + ": Failed to create edge from pcurve");
-        return TopoDS_Edge();
-      }
-      TopoDS_Edge newEdge = edgeMaker.Edge();
-      myEdgeMap[edgeId] = newEdge;  // Store in map for sharing
-      return newEdge;
-    }
-    else {
-      // Fallback: create straight edge without pcurve (should not happen for edges on surfaces)
-      BRepBuilderAPI_MakeEdge edgeMaker(p1, p2);
-      if (!edgeMaker.IsDone()) {
-        addError("HalfEdge " + std::to_string(theHalfEdge.id) + ": Failed to create straight edge");
-        return TopoDS_Edge();
-      }
-      TopoDS_Edge newEdge = edgeMaker.Edge();
-      myEdgeMap[edgeId] = newEdge;  // Store in map for sharing
-      return newEdge;
-    }
-  }
 
   // 4. Convert 2D curve
   Handle(Geom2d_BSplineCurve) curve2d = convertCurve2D(curveData);
@@ -436,6 +371,40 @@ TopoDS_Edge EzDesignToOCCTConverter::convertHalfEdge(
 
   // 6. Create edge directly from pcurve and surface with vertices (no 3D curve needed)
   // OCCT's STEP writer will compute the 3D curve automatically if needed
+
+  // Update vertex tolerances based on actual geometric distances
+  // Evaluate pcurve endpoints in 3D space and compare with vertex positions
+  gp_Pnt2d uvStart = curve2d->Value(uMin);
+  gp_Pnt2d uvEnd = curve2d->Value(uMax);
+  gp_Pnt curveStart3D = theSurface->Value(uvStart.X(), uvStart.Y());
+  gp_Pnt curveEnd3D = theSurface->Value(uvEnd.X(), uvEnd.Y());
+  
+  gp_Pnt vertexStart3D = BRep_Tool::Pnt(vStart);
+  gp_Pnt vertexEnd3D = BRep_Tool::Pnt(vEnd);
+  
+  Standard_Real distStart = curveStart3D.Distance(vertexStart3D);
+  Standard_Real distEnd = curveEnd3D.Distance(vertexEnd3D);
+  
+  // Set tolerance to accommodate the geometric discrepancy, with a safety margin
+  Standard_Real baseTol = Precision::Confusion();
+  Standard_Real tolStart = BRep_Tool::Tolerance(vStart);
+  Standard_Real tolEnd = BRep_Tool::Tolerance(vEnd);
+  
+  // Tolerance should be at least the distance, with a small safety margin (1.1x)
+  Standard_Real requiredTolStart = (baseTol > distStart * 1.1) ? baseTol : (distStart * 1.1);
+  Standard_Real requiredTolEnd = (baseTol > distEnd * 1.1) ? baseTol : (distEnd * 1.1);
+  
+  // Update only if current tolerance is insufficient
+  if (tolStart < requiredTolStart || tolEnd < requiredTolEnd) {
+    BRep_Builder builder;
+    if (tolStart < requiredTolStart) {
+      builder.UpdateVertex(vStart, requiredTolStart);
+    }
+    if (tolEnd < requiredTolEnd) {
+      builder.UpdateVertex(vEnd, requiredTolEnd);
+    }
+  }
+
   BRepBuilderAPI_MakeEdge edgeMaker(curve2d, theSurface, vStart, vEnd, uMin, uMax);
   if (!edgeMaker.IsDone()) {
     addError("HalfEdge " + std::to_string(theHalfEdge.id) + ": Failed to create edge from pcurve");
