@@ -28,8 +28,8 @@ struct EzControlPoints
 {
   std::vector<double> data;  // Flattened array
   int dimension;  // 2 or 3
-  int number_u_points;  // For surfaces: U direction, for curves: number of control points
-  int number_v_points;  // For surfaces: V direction, for curves: always 2
+  int number_u_points;  // For surfaces: U direction, for curves: always 1
+  int number_v_points;  // For surfaces: V direction, for curves: number of control points
   bool is_rational;
 };
 

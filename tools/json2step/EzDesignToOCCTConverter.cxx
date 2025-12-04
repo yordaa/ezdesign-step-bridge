@@ -346,13 +346,13 @@ TopoDS_Edge EzDesignToOCCTConverter::convertHalfEdge(
   // 2. Get curve_data - try current half-edge first, then opposite if available
   EzCurveData curveData = theHalfEdge.curve_data;
   bool hasCurveData = !curveData.control_points.data.empty() &&
-                      curveData.control_points.number_u_points >= 2;
+                      curveData.control_points.number_v_points >= 2;
 
   // If no curve_data, try opposite half-edge
   if (!hasCurveData && theHalfEdge.opposite_id != 0) {
     const EzHalfEdge& oppositeHe = getHalfEdge(theHalfEdge.opposite_id);
     if (oppositeHe.id != 0 && !oppositeHe.curve_data.control_points.data.empty() &&
-        oppositeHe.curve_data.control_points.number_u_points >= 2) {
+        oppositeHe.curve_data.control_points.number_v_points >= 2) {
       curveData = oppositeHe.curve_data;
       hasCurveData = true;
     }
@@ -458,13 +458,13 @@ void EzDesignToOCCTConverter::addPCurveToEdge(
   // 1. Get curve_data - try current half-edge first, then opposite if available
   EzCurveData curveData = theHalfEdge.curve_data;
   bool hasCurveData = !curveData.control_points.data.empty() &&
-                      curveData.control_points.number_u_points >= 2;
+                      curveData.control_points.number_v_points >= 2;
 
   // If no curve_data, try opposite half-edge
   if (!hasCurveData && theHalfEdge.opposite_id != 0) {
     const EzHalfEdge& oppositeHe = getHalfEdge(theHalfEdge.opposite_id);
     if (oppositeHe.id != 0 && !oppositeHe.curve_data.control_points.data.empty() &&
-        oppositeHe.curve_data.control_points.number_u_points >= 2) {
+        oppositeHe.curve_data.control_points.number_v_points >= 2) {
       curveData = oppositeHe.curve_data;
       hasCurveData = true;
     }
@@ -782,7 +782,7 @@ Handle(Geom2d_BSplineCurve) EzDesignToOCCTConverter::convertCurve2D(const EzCurv
   const auto& basis = theData.basis;
 
   // 1. Reshape 2D control points
-  int numPoints = cp.number_u_points;  // Actually number of control points
+  int numPoints = cp.number_v_points;  // For curves: number_v_points is the number of control points
   
   // Validate: B-spline curve needs at least 2 poles
   if (numPoints < 2) {
@@ -1063,7 +1063,7 @@ TColgp_Array2OfPnt EzDesignToOCCTConverter::reshapeControlPoints3D(
 
   for (int i = 0; i < theNumU; i++) {
     for (int j = 0; j < theNumV; j++) {
-      int idx = (i * theNumV + j) * 3;
+      int idx = (j * theNumU + i) * 3;
       if (idx + 2 < static_cast<int>(theFlatData.size())) {
         gp_Pnt point(theFlatData[idx], theFlatData[idx + 1], theFlatData[idx + 2]);
         poles.SetValue(i + 1, j + 1, point);
