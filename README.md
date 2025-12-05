@@ -1,64 +1,176 @@
-# Open CASCADE Technology
+# OCCT - EzDesign to STEP Converter
 
-Open CASCADE Technology (OCCT) is a software development platform providing services for 3D surface and solid modeling, CAD data exchange, and visualization. Most of OCCT functionality is available in the form of C++ libraries. OCCT is ideal for developing software dealing with 3D modeling (CAD), manufacturing/measuring (CAM), or numerical simulation (CAE).
+This is a fork of [Open CASCADE Technology (OCCT)](https://github.com/Open-Cascade-SAS/OCCT) that provides a conversion bridge from the **ezdesign** JSON format to **STEP** files. The primary tool in this repository is `json2step`, which converts ezdesign geometry data into industry-standard STEP format.
+
+## Overview
+
+This repository extends OCCT with a specialized conversion tool (`json2step`) that:
+
+- Reads ezdesign JSON files (`.ezd` format)
+- Converts B-spline surfaces, curves, and topology to OCCT's geometric kernel
+- Exports to STEP format (ISO 10303-21) for CAD interoperability
+- Preserves topology sharing (shared edges between faces)
+- Handles complex subdivision surface models
 
 ## License
 
-Open CASCADE Technology is free software; you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License version 2.1 as published by the Free Software Foundation, with a special exception defined in the file `OCCT_LGPL_EXCEPTION.txt`. Consult the file `LICENSE_LGPL_21.txt` included in the OCCT distribution for the complete text of the license.
+This repository contains code under two different licenses:
 
-Alternatively, Open CASCADE Technology may be used under the terms of the Open CASCADE commercial license or a contractual agreement.
+### Proprietary Code (`tools/json2step/`)
 
-**Note:** Open CASCADE Technology is provided on an "AS IS" basis, WITHOUT WARRANTY OF ANY KIND. The entire risk related to any use of the OCCT code and materials is on you. See the license text for a formal disclaimer.
+All files in the `tools/json2step/` directory are **proprietary and confidential**. 
+See `tools/json2step/LICENSE` for terms and conditions.
 
-## Packaging
+**Copyright (c) 2025 Yang Song. All rights reserved.**
 
-You can receive certified versions of OCCT code in different packages:
+### OCCT Code (Everything Else)
 
-- **Snapshot of Git repository:** Contains C++ header and source files of OCCT, documentation sources, build scripts, and CMake project files.
-- **Complete source archive:** Contains all sources of OCCT, generated HTML and PDF documentation, and ready-to-use projects for building on all officially supported platforms.
-- **Binary package (platform-specific):** In addition to the complete source archive, it includes binaries of OCCT and third-party libraries built on one platform. This package allows using OCCT immediately after installation.
+The rest of this repository is Open CASCADE Technology (OCCT), licensed under:
 
-Certified versions of OCCT can be downloaded from:
-- [Open CASCADE Releases](https://dev.opencascade.org/release)
-- [GitHub Releases](https://github.com/Open-Cascade-SAS/OCCT/releases)
+- **GNU Lesser General Public License version 2.1** (LGPL 2.1) with special exception defined in `OCCT_LGPL_EXCEPTION.txt`
+- See `LICENSE_LGPL_21.txt` for complete license text
+- Alternatively, OCCT may be used under Open CASCADE commercial license
 
-You can also find OCCT pre-installed on your system or install it from packages provided by a third party. Note that packaging and functionality of such versions can be different from certified releases. Please consult the documentation accompanying your version for details.
+**Note:** OCCT is provided on an "AS IS" basis, WITHOUT WARRANTY OF ANY KIND.
 
-## Documentation
+### Distribution Notice
 
-Documentation is available at the following links:
-- [Latest version](https://dev.opencascade.org/doc/overview)
-- [Version 7.8](https://dev.opencascade.org/doc/occt-7.8.0/overview)
-
-Documentation can be part of the package. To preview documentation as part of the package, open the file `doc/html/index.html` to browse HTML documentation.
-
-If HTML documentation is not available in your package, you can:
-
-- **Generate it from sources:** You need to have Tcl and Doxygen 1.8.4 (or above) installed on your system and accessible in your environment (check the environment variable PATH). Use the batch file `adm/gendoc.bat` on Windows or the Bash script `adm/gendoc` on Linux or OS X to (re)generate documentation.
-- **Generate together with sources:** You need to have CMake and 1.8.4 (or above) installed on your system. Enable `BUILD_DOC_Overview` CMake parameter and set the path to Doxygen `3RDPARTY_DOXYGEN_EXECUTABLE`. Then build ALL or only `Overview`.
-- **Read documentation in source plain text (Markdown) format** found in the subfolder `dox` or [GitHub Wiki](https://github.com/Open-Cascade-SAS/OCCT/wiki).
-
-See [dox/build/build_documentation/building_documentation.md](dox/build/build_documentation/building_documentation.md) or [Building Documentation](https://dev.opencascade.org/doc/occt-7.8.0/overview/html/build_upgrade__building_documentation.html) for details.
+When distributing binaries that link against OCCT libraries:
+- OCCT portions remain under LGPL 2.1
+- You must provide OCCT source code (or offer it)
+- You must include LGPL license notices
+- Your proprietary code in `tools/json2step/` can remain proprietary
 
 ## Building
 
-In most cases, you need to rebuild OCCT on your platform (OS, compiler) before using it in your project to ensure binary compatibility.
+### Prerequisites
 
-Consult the file [dox/build/build_occt/building_occt.md](dox/build/build_occt/building_occt.md) or [Building OCCT](https://dev.opencascade.org/doc/overview/html/build_upgrade__building_occt.html) or [Building OCCT Wiki](https://github.com/Open-Cascade-SAS/OCCT/wiki/build_upgrade) for instructions on building OCCT from sources on supported platforms.
+- CMake 3.12 or later
+- C++ compiler with C++17 support (Clang, GCC, or MSVC)
+- [nlohmann/json](https://github.com/nlohmann/json) library
+  - macOS: `brew install nlohmann-json`
+  - Windows: Use vcpkg or build from source
 
-## Version
+### Build Instructions
 
-The current version of OCCT can be found in the file [`adm/cmake/version.cmake`](adm/cmake/version.cmake).
+```bash
+# Configure build
+cmake -B build
+
+# Build json2step tool
+cmake --build build --target json2step -j8
+
+# Build test suite (optional)
+cmake --build build --target test_basic_models -j8
+```
+
+The `json2step` executable will be located at:
+- `build/mac64/clang/bin/json2step` (macOS)
+- `build/linux64/gcc/bin/json2step` (Linux)
+- `build/win64/vc14/bin/json2step.exe` (Windows)
+
+## Usage
+
+### Basic Conversion
+
+```bash
+json2step <input.ezd> <output.step>
+```
+
+Example:
+```bash
+json2step model.ezd model.step
+```
+
+### Test Suite
+
+Run the test suite to verify conversion on sample models:
+
+```bash
+# Set path to json2step (if not in PATH)
+export JSON2STEP_PATH=build/mac64/clang/bin/json2step
+
+# Run tests
+build/mac64/clang/bin/test_basic_models
+```
+
+The test suite validates:
+- Single-face models
+- Double-face models (with shared edges)
+- Multi-face models (3+ faces)
+
+Each test:
+1. Converts the JSON file to STEP
+2. Reads the STEP file back using OCCT
+3. Validates face counts and topology
+
+## Project Structure
+
+```
+tools/json2step/
+├── json2step.cxx              # Main executable
+├── EzDesignJsonReader.*      # JSON file parser
+├── EzDesignToOCCTConverter.* # Core conversion logic
+├── EzDesignTypes.hxx         # Data structure definitions
+├── test_basic_models.cxx     # Test suite
+└── CMakeLists.txt            # Build configuration
+```
+
+## Key Features
+
+### Topology Preservation
+
+The converter correctly handles shared edges between faces:
+- Maps JSON `edge_id` to OCCT `TopoDS_Edge` objects
+- Ensures a single `EDGE_CURVE` entity in STEP for geometrically identical edges
+- Multiple `ORIENTED_EDGE` entities reference the same `EDGE_CURVE`
+
+### Geometric Accuracy
+
+- **Tolerance computation**: Vertex tolerances are computed based on actual distances between curve endpoints and vertex positions
+- **Pcurve handling**: 2D parametric curves on surfaces are correctly associated with edges
+- **Surface evaluation**: B-spline surfaces are properly constructed from control points and knot vectors
+
+### Error Handling
+
+The converter reports errors for:
+- Invalid JSON structure
+- Missing or invalid geometry data
+- Edge creation failures
+- Topology validation issues
+
+Errors are collected and reported at the end of conversion.
+
+## Limitations
+
+- Rational B-spline surfaces (with weights) are currently treated as non-rational
+- Only B-spline geometry is supported (no NURBS weights)
+- Input must be valid ezdesign JSON format
 
 ## Development
 
-### Bug Tracker
-- [GitHub Issues](https://github.com/Open-Cascade-SAS/OCCT/issues)
-- [OCCT Tracker](https://tracker.dev.opencascade.org/)
+### Adding New Features
 
-For information regarding OCCT code development, please consult the official OCCT Collaborative Development Portal:
-- [OCCT Development Portal](http://dev.opencascade.org)
+The conversion pipeline:
+1. `EzDesignJsonReader`: Parses JSON and builds in-memory data structures
+2. `EzDesignToOCCTConverter`: Converts to OCCT topology (`TopoDS_Shape`)
+3. `STEPControl_Writer`: Writes OCCT shapes to STEP format
 
-### Forum and Discussions
-- [OCCT Forums](https://dev.opencascade.org/forums)
-- [GitHub Discussions](https://github.com/Open-Cascade-SAS/OCCT/discussions)
+To extend functionality:
+- Modify `EzDesignToOCCTConverter` for new geometry types
+- Update `EzDesignTypes.hxx` for new JSON structures
+- Add validation in conversion methods
+
+### Testing
+
+Add new test cases to `test_basic_models.cxx` or create additional test executables following the same pattern.
+
+## References
+
+- [Open CASCADE Technology](https://dev.opencascade.org/) - Original OCCT project
+- [STEP Format (ISO 10303-21)](https://www.iso.org/standard/63141.html) - CAD data exchange standard
+- [OCCT Documentation](https://dev.opencascade.org/doc/overview) - OCCT API reference
+
+## Version
+
+Based on OCCT version defined in [`adm/cmake/version.cmake`](adm/cmake/version.cmake).
