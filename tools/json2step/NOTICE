@@ -1,0 +1,16 @@
+PROPRIETARY SOFTWARE NOTICE
+===========================
+
+All files in this directory (tools/json2step/) are proprietary and confidential.
+
+Copyright (c) 2025 Yang Song. All rights reserved.
+
+This software uses Open CASCADE Technology (OCCT) libraries, which are licensed 
+under GNU Lesser General Public License version 2.1 (LGPL 2.1).
+
+When distributing binaries:
+- This proprietary code remains proprietary
+- OCCT libraries remain under LGPL 2.1
+- You must comply with LGPL requirements for OCCT portions
+- See LICENSE file in this directory for full terms
+
