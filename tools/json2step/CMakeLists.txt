@@ -70,3 +70,24 @@ target_link_libraries(test_step_roundtrip PRIVATE
   ${CMAKE_BINARY_DIR}/mac64/clang/lib/libTKCDF.dylib
 )
 
+# Basic models test program
+# Use same approach as test_step_roundtrip - standalone executable with manual library linking
+add_executable(test_basic_models test_basic_models.cxx)
+# Link against required OCCT libraries for STEP reading
+# Note: Using library names without TK prefix (OCCT internal naming)
+# Link against shared libraries (.dylib on macOS)
+target_link_libraries(test_basic_models PRIVATE
+  ${CMAKE_BINARY_DIR}/mac64/clang/lib/libTKDESTEP.dylib
+  ${CMAKE_BINARY_DIR}/mac64/clang/lib/libTKXSBase.dylib
+  ${CMAKE_BINARY_DIR}/mac64/clang/lib/libTKDE.dylib
+  ${CMAKE_BINARY_DIR}/mac64/clang/lib/libTKBRep.dylib
+  ${CMAKE_BINARY_DIR}/mac64/clang/lib/libTKTopAlgo.dylib
+  ${CMAKE_BINARY_DIR}/mac64/clang/lib/libTKGeomBase.dylib
+  ${CMAKE_BINARY_DIR}/mac64/clang/lib/libTKGeomAlgo.dylib
+  ${CMAKE_BINARY_DIR}/mac64/clang/lib/libTKG3d.dylib
+  ${CMAKE_BINARY_DIR}/mac64/clang/lib/libTKG2d.dylib
+  ${CMAKE_BINARY_DIR}/mac64/clang/lib/libTKMath.dylib
+  ${CMAKE_BINARY_DIR}/mac64/clang/lib/libTKernel.dylib
+  ${CMAKE_BINARY_DIR}/mac64/clang/lib/libTKCDF.dylib
+)
+
