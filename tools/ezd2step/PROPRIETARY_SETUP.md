@@ -9,7 +9,7 @@ All source files in this directory have been updated with proprietary copyright 
 - `EzDesignTypes.hxx`
 - `EzDesignJsonReader.hxx` / `EzDesignJsonReader.cxx`
 - `EzDesignToOCCTConverter.hxx` / `EzDesignToOCCTConverter.cxx`
-- `json2step.cxx`
+- `ezd2step.cxx`
 - `test_basic_models.cxx`
 - `test_step_roundtrip.cxx`
 

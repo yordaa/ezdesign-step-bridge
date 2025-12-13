@@ -1,4 +1,4 @@
-json2step.cxx
+ezd2step.cxx
 EzDesignJsonReader.hxx
 EzDesignJsonReader.cxx
 EzDesignToOCCTConverter.hxx

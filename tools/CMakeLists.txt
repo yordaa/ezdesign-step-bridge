@@ -373,7 +373,7 @@ if (BUILD_TOOL_TOOLKITS)
   endforeach()
 endif()
 
-# json2step tool is now added directly from main CMakeLists.txt
+# ezd2step tool is now added directly from main CMakeLists.txt
 
 message (STATUS "Info: \(${CURRENT_TIME}\) OCCT toolkits processed")
 

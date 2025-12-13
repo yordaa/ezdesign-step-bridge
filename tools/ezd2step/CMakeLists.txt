@@ -1,4 +1,4 @@
-project(json2step)
+project(ezd2step)
 
 # Detect nlohmann/json
 find_package(nlohmann_json QUIET)
@@ -24,7 +24,7 @@ endif()
 # Include OCCT build system
 OCCT_INCLUDE_CMAKE_FILE (adm/cmake/occt_toolkit_prepare_tool)
 set (EXECUTABLE_PROJECT ON)
-# Disable Qt for this tool (json2step doesn't need Qt)
+# Disable Qt for this tool (ezd2step doesn't need Qt)
 set (USE_QT OFF)
 OCCT_INCLUDE_CMAKE_FILE (adm/cmake/occt_toolkit)
 unset (EXECUTABLE_PROJECT)
@@ -49,7 +49,7 @@ endif()
 # These will be automatically resolved via EXTERNLIB file
 
 # Round-trip test program
-# Use same approach as json2step - standalone executable with manual library linking
+# Use same approach as ezd2step - standalone executable with manual library linking
 add_executable(test_step_roundtrip test_step_roundtrip.cxx)
 # Link against required OCCT libraries for STEP reading
 # Note: Using library names without TK prefix (OCCT internal naming)
