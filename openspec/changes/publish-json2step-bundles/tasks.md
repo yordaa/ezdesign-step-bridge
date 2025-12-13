@@ -7,36 +7,36 @@
 
 ## 2. Build System Configuration
 
-- [ ] 2.1 Configure CMake to build OCCT as shared libraries (not static)
-- [ ] 2.2 Set rpath for macOS builds (`@loader_path` or `@rpath`)
-- [ ] 2.3 Configure Windows DLL search path (executable directory)
+- [x] 2.1 Configure CMake to build OCCT as shared libraries (not static)
+- [x] 2.2 Set rpath for macOS builds (`@loader_path` or `@rpath`)
+- [x] 2.3 Configure Windows DLL search path (executable directory)
 - [ ] 2.4 Add environment variable override support (`OCCT_LIB_PATH` or platform-specific)
-- [ ] 2.5 Create CMake packaging targets for bundle creation
+- [x] 2.5 Create CMake packaging targets for bundle creation
 
 ## 3. CLI Interface Contract
 
-- [ ] 3.1 Document and implement exit code contract (0 = success, non-zero = failure)
-- [ ] 3.2 Ensure progress/info messages go to stdout
-- [ ] 3.3 Ensure error messages go to stderr
-- [ ] 3.4 Add `--version` flag (optional but recommended)
+- [x] 3.1 Document and implement exit code contract (0 = success, non-zero = failure)
+- [x] 3.2 Ensure progress/info messages go to stdout
+- [x] 3.3 Ensure error messages go to stderr
+- [x] 3.4 Add `--version` flag (optional but recommended)
 - [ ] 3.5 Validate CLI contract with tests
 
 ## 4. C API Implementation (Optional)
 
-- [ ] 4.1 Design C API structure (`ezd_to_step_options`)
-- [ ] 4.2 Implement C wrapper around C++ conversion code
-- [ ] 4.3 Create shared library target (`.dylib`/`.dll`)
-- [ ] 4.4 Add C API header file (`ezd_to_step.h`)
-- [ ] 4.5 Write C API documentation and examples
+- [x] 4.1 Design C API structure (`ezd_to_step_options`)
+- [x] 4.2 Implement C wrapper around C++ conversion code
+- [x] 4.3 Create shared library target (`.dylib`/`.dll`)
+- [x] 4.4 Add C API header file (`ezd_to_step.h`)
+- [x] 4.5 Write C API documentation and examples
 
 ## 5. Bundle Packaging
 
-- [ ] 5.1 Create bundle directory structure script/target
-- [ ] 5.2 Copy `ezd2step` executable to bundle
-- [ ] 5.3 Copy required OCCT libraries to bundle
-- [ ] 5.4 Generate README.txt with usage and LGPL notices
-- [ ] 5.5 Include LICENSE.txt (LGPL 2.1 text)
-- [ ] 5.6 Create archive (`.tar.gz` for macOS, `.zip` for Windows)
+- [x] 5.1 Create bundle directory structure script/target
+- [x] 5.2 Copy `ezd2step` executable to bundle
+- [x] 5.3 Copy required OCCT libraries to bundle
+- [x] 5.4 Generate README.txt with usage and LGPL notices
+- [x] 5.5 Include LICENSE.txt (LGPL 2.1 text)
+- [x] 5.6 Create archive (`.tar.gz` for macOS, `.zip` for Windows)
 
 ## 6. Source Package
 
@@ -50,10 +50,10 @@
 
 ## 7. Versioning and Artifacts
 
-- [ ] 7.1 Implement versioning scheme in build system
-- [ ] 7.2 Generate versioned artifact names
-- [ ] 7.3 Create checksums (SHA256) for all artifacts
-- [ ] 7.4 Generate `SHA256SUMS` file
+- [x] 7.1 Implement versioning scheme in build system
+- [x] 7.2 Generate versioned artifact names
+- [x] 7.3 Create checksums (SHA256) for all artifacts
+- [x] 7.4 Generate `SHA256SUMS` file
 
 ## 8. Testing
 

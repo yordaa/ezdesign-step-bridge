@@ -24,6 +24,20 @@
 #include <cstring>
 #include <string>
 
+// Version definitions (from CMake)
+#ifndef EZD2STEP_VERSION_MAJOR
+#define EZD2STEP_VERSION_MAJOR 1
+#endif
+#ifndef EZD2STEP_VERSION_MINOR
+#define EZD2STEP_VERSION_MINOR 0
+#endif
+#ifndef EZD2STEP_VERSION_PATCH
+#define EZD2STEP_VERSION_PATCH 0
+#endif
+#ifndef EZD2STEP_VERSION
+#define EZD2STEP_VERSION "1.0.0"
+#endif
+
 //=======================================================================
 // function : printUsage
 // purpose  : Print usage information
@@ -38,8 +52,22 @@ void printUsage(const char* programName)
   std::cout << "  input.ezd    - Input JSON file in ezdesign format" << std::endl;
   std::cout << "  output.step  - Output STEP file" << std::endl;
   std::cout << std::endl;
+  std::cout << "Options:" << std::endl;
+  std::cout << "  --version, -v  - Show version information" << std::endl;
+  std::cout << "  --help, -h      - Show this help message" << std::endl;
+  std::cout << std::endl;
   std::cout << "Example:" << std::endl;
   std::cout << "  " << programName << " model.ezd model.step" << std::endl;
+}
+
+//=======================================================================
+// function : printVersion
+// purpose  : Print version information
+//=======================================================================
+void printVersion()
+{
+  std::cout << "ezd2step version " << EZD2STEP_VERSION << std::endl;
+  std::cout << "Copyright (c) 2025 Yang Song. All rights reserved." << std::endl;
 }
 
 //=======================================================================
@@ -88,6 +116,18 @@ bool checkDirectoryWritable(const char* filePath)
 //=======================================================================
 int main(int argc, char* argv[])
 {
+  // Handle --version and --help flags
+  if (argc == 2) {
+    if (strcmp(argv[1], "--version") == 0 || strcmp(argv[1], "-v") == 0) {
+      printVersion();
+      return 0;
+    }
+    if (strcmp(argv[1], "--help") == 0 || strcmp(argv[1], "-h") == 0) {
+      printUsage(argv[0]);
+      return 0;
+    }
+  }
+
   if (argc != 3) {
     printUsage(argv[0]);
     return 1;
