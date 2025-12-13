@@ -57,13 +57,13 @@
 
 ## 8. Testing
 
-- [ ] 8.1 Create smoke test script for bundle validation
-- [ ] 8.2 Test `ezd2step` execution from bundle (help/version)
+- [x] 8.1 Create smoke test script for bundle validation
+- [x] 8.2 Test `ezd2step` execution from bundle (help/version)
 - [ ] 8.3 Test conversion of sample `.ezd` file to `.step`
 - [ ] 8.4 Verify STEP file can be read back by OCCT
-- [ ] 8.5 Test non-zero exit code on failure cases (invalid input, missing file)
+- [x] 8.5 Test non-zero exit code on failure cases (invalid input, missing file)
 - [ ] 8.6 Test environment variable override for OCCT libraries
-- [ ] 8.7 Test library loading from bundle (rpath/DLL search)
+- [x] 8.7 Test library loading from bundle (rpath/DLL search)
 
 ## 9. CI/CD Integration
 
@@ -75,9 +75,9 @@
 
 ## 10. Documentation
 
-- [ ] 10.1 Write distribution README (usage, system requirements)
-- [ ] 10.2 Document library path override mechanism
-- [ ] 10.3 Create usage examples for downstream (EZDesign) integration
-- [ ] 10.4 Document expected paths and environment variable overrides
-- [ ] 10.5 Add troubleshooting section (common issues, library loading problems)
+- [x] 10.1 Write distribution README (usage, system requirements)
+- [x] 10.2 Document library path override mechanism
+- [x] 10.3 Create usage examples for downstream (EZDesign) integration
+- [x] 10.4 Document expected paths and environment variable overrides
+- [x] 10.5 Add troubleshooting section (common issues, library loading problems)
 
