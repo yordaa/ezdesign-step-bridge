@@ -1,16 +1,16 @@
 ## 1. Preparation and Documentation
 
-- [ ] 1.1 Choose and document OCCT commit/tag used for builds
-- [ ] 1.2 Document any patches applied to OCCT (if any)
-- [ ] 1.3 Document build toolchain versions (compiler, CMake, etc.)
-- [ ] 1.4 Create LGPL compliance notice template
+- [x] 1.1 Choose and document OCCT commit/tag used for builds
+- [x] 1.2 Document any patches applied to OCCT (if any)
+- [x] 1.3 Document build toolchain versions (compiler, CMake, etc.)
+- [x] 1.4 Create LGPL compliance notice template
 
 ## 2. Build System Configuration
 
 - [x] 2.1 Configure CMake to build OCCT as shared libraries (not static)
 - [x] 2.2 Set rpath for macOS builds (`@loader_path` or `@rpath`)
 - [x] 2.3 Configure Windows DLL search path (executable directory)
-- [ ] 2.4 Add environment variable override support (`OCCT_LIB_PATH` or platform-specific)
+- [x] 2.4 Add environment variable override support (`OCCT_LIB_PATH` or platform-specific)
 - [x] 2.5 Create CMake packaging targets for bundle creation
 
 ## 3. CLI Interface Contract
@@ -40,13 +40,13 @@
 
 ## 6. Source Package
 
-- [ ] 6.1 Create source package directory structure
-- [ ] 6.2 Include OCCT source reference (commit/tag, or full source if small)
-- [ ] 6.3 Document applied patches (if any)
-- [ ] 6.4 Write build instructions matching binary build process
-- [ ] 6.5 Document toolchain versions and build flags
-- [ ] 6.6 Include OCCT version/commit information
-- [ ] 6.7 Create source archive
+- [x] 6.1 Create source package directory structure
+- [x] 6.2 Include OCCT source reference (commit/tag, or full source if small)
+- [x] 6.3 Document applied patches (if any)
+- [x] 6.4 Write build instructions matching binary build process
+- [x] 6.5 Document toolchain versions and build flags
+- [x] 6.6 Include OCCT version/commit information
+- [x] 6.7 Create source archive
 
 ## 7. Versioning and Artifacts
 
@@ -62,7 +62,7 @@
 - [ ] 8.3 Test conversion of sample `.ezd` file to `.step`
 - [ ] 8.4 Verify STEP file can be read back by OCCT
 - [x] 8.5 Test non-zero exit code on failure cases (invalid input, missing file)
-- [ ] 8.6 Test environment variable override for OCCT libraries
+- [x] 8.6 Test environment variable override for OCCT libraries
 - [x] 8.7 Test library loading from bundle (rpath/DLL search)
 
 ## 9. CI/CD Integration
