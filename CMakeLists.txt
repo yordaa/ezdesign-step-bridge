@@ -1275,8 +1275,8 @@ if (BUILD_TOOL_TOOLKITS)
   endforeach()
 endif()
 
-# Add json2step tool (standalone executable, not part of Inspector tools)
-OCCT_ADD_SUBDIRECTORY ("tools/json2step")
+# Add ezd2step tool (standalone executable, not part of Inspector tools)
+OCCT_ADD_SUBDIRECTORY ("tools/ezd2step")
 
 message (STATUS "Info: \(${CURRENT_TIME}\) OCCT toolkits processed")
 # samples do not support patch usage

@@ -5,13 +5,16 @@
 
 name: Build and Test OCCT on Multiple Platforms
 
+# CI disabled - uncomment below to re-enable
+# on:
+#   pull_request:
+#     branches:
+#       - '**'
+#   push:
+#     branches:
+#       - 'master'
 on:
-  pull_request:
-    branches:
-      - '**'
-  push:
-    branches:
-      - 'master'
+  workflow_dispatch:  # Manual trigger only
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number }}

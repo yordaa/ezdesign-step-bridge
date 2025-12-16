@@ -58,23 +58,23 @@ std::string expandPath(const char* path)
 }
 
 //=======================================================================
-// function : findJson2Step
-// purpose  : Find the json2step executable path
+// function : findEzd2Step
+// purpose  : Find the ezd2step executable path
 //=======================================================================
-std::string findJson2Step()
+std::string findEzd2Step()
 {
   // Check environment variable first
-  const char* envPath = std::getenv("JSON2STEP_PATH");
+  const char* envPath = std::getenv("EZD2STEP_PATH");
   if (envPath != nullptr) {
     return std::string(envPath);
   }
   
   // Try common build paths
   const char* candidates[] = {
-    "build/mac64/clang/bin/json2step",
-    "../../mac64/clang/bin/json2step",
-    "../mac64/clang/bin/json2step",
-    "json2step"  // Fallback to PATH
+    "build/mac64/clang/bin/ezd2step",
+    "../../mac64/clang/bin/ezd2step",
+    "../mac64/clang/bin/ezd2step",
+    "ezd2step"  // Fallback to PATH
   };
   
   for (const char* candidate : candidates) {
@@ -86,26 +86,26 @@ std::string findJson2Step()
   }
   
   // Default fallback
-  return std::string("json2step");
+  return std::string("ezd2step");
 }
 
 //=======================================================================
 // function : testModel
 // purpose  : Test conversion and validation of a single model
 //=======================================================================
-int testModel(const char* jsonFile, const char* stepFile, int expectedFaces, const char* modelName, const std::string& json2stepPath)
+int testModel(const char* jsonFile, const char* stepFile, int expectedFaces, const char* modelName, const std::string& ezd2stepPath)
 {
   std::cout << "\n========================================" << std::endl;
   std::cout << "Testing: " << modelName << std::endl;
   std::cout << "========================================" << std::endl;
   
-  // Step 1: Convert JSON to STEP using json2step
+  // Step 1: Convert JSON to STEP using ezd2step
   std::cout << "Step 1: Converting " << jsonFile << " to STEP..." << std::endl;
-  std::string cmd = json2stepPath + " \"" + jsonFile + "\" \"" + stepFile + "\"";
+  std::string cmd = ezd2stepPath + " \"" + jsonFile + "\" \"" + stepFile + "\"";
   int result = system(cmd.c_str());
   
   if (result != 0) {
-    std::cerr << "ERROR: json2step conversion failed for " << modelName << std::endl;
+    std::cerr << "ERROR: ezd2step conversion failed for " << modelName << std::endl;
     return 1;
   }
   
@@ -203,12 +203,12 @@ int main(int argc, char* argv[])
   std::string threeFacesJson = (argc > 3) ? argv[3] : expandPath("~/Downloads/20251204-3-faces.ezd");
   
   std::cout << "========================================" << std::endl;
-  std::cout << "json2step Basic Models Test Suite" << std::endl;
+  std::cout << "ezd2step Basic Models Test Suite" << std::endl;
   std::cout << "========================================" << std::endl;
   
-  // Find json2step executable
-  std::string json2stepPath = findJson2Step();
-  std::cout << "Using json2step: " << json2stepPath << std::endl;
+  // Find ezd2step executable
+  std::string ezd2stepPath = findEzd2Step();
+  std::cout << "Using ezd2step: " << ezd2stepPath << std::endl;
   
   int totalFailures = 0;
   
@@ -218,7 +218,7 @@ int main(int argc, char* argv[])
     "/tmp/test-single-face.step",
     1,
     "Single-face",
-    json2stepPath
+    ezd2stepPath
   );
   
   // Test 2: Double-face
@@ -227,7 +227,7 @@ int main(int argc, char* argv[])
     "/tmp/test-double-face.step",
     2,
     "Double-face",
-    json2stepPath
+    ezd2stepPath
   );
   
   // Test 3: 3-faces
@@ -236,7 +236,7 @@ int main(int argc, char* argv[])
     "/tmp/test-3-faces.step",
     3,
     "3-faces",
-    json2stepPath
+    ezd2stepPath
   );
   
   // Summary
