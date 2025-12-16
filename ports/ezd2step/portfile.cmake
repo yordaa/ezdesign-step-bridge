@@ -129,8 +129,8 @@ file(COPY "${CURRENT_BUILDTREES_DIR}/src/ezd2step-${VERSION}-${PLATFORM}/"
 
 # Copy to EZDesign resources directory
 # Detect project root from CURRENT_INSTALLED_DIR (lib/vcpkg_installed/arm64-osx)
-# Project root is CURRENT_INSTALLED_DIR/../..
-get_filename_component(PROJECT_ROOT "${CURRENT_INSTALLED_DIR}/../.." ABSOLUTE)
+# Project root is CURRENT_INSTALLED_DIR/../../.. (three levels up)
+get_filename_component(PROJECT_ROOT "${CURRENT_INSTALLED_DIR}/../../.." ABSOLUTE)
 message(STATUS "Detected project root: ${PROJECT_ROOT}")
 message(STATUS "Checking for package.json: ${PROJECT_ROOT}/package.json")
 message(STATUS "Checking for resources: ${PROJECT_ROOT}/resources")
