@@ -23,12 +23,50 @@ else()
 endif()
 
 # Download bundle from GitHub Releases
-vcpkg_download_distfile(
-    ARCHIVE
-    URLS "https://github.com/yordaa/ezdesign-step-bridge/releases/download/v${VERSION}/${ARCHIVE_NAME}"
-    FILENAME "${ARCHIVE_NAME}"
-    SHA512 "${ARCHIVE_SHA512}"
-)
+# For private repos, use gh CLI which handles authentication automatically
+find_program(GH_CLI gh)
+if(GH_CLI)
+    message(STATUS "Downloading ${ARCHIVE_NAME} using gh CLI (private repo)...")
+    set(DOWNLOAD_DIR "${CURRENT_BUILDTREES_DIR}")
+    set(ARCHIVE "${DOWNLOAD_DIR}/${ARCHIVE_NAME}")
+    
+    # Use gh CLI to download from private release
+    execute_process(
+        COMMAND ${GH_CLI} release download v${VERSION}
+            --repo yordaa/ezdesign-step-bridge
+            --pattern "${ARCHIVE_NAME}"
+            --dir "${DOWNLOAD_DIR}"
+        RESULT_VARIABLE GH_RESULT
+        ERROR_VARIABLE GH_ERROR
+        OUTPUT_VARIABLE GH_OUTPUT
+    )
+    
+    if(NOT GH_RESULT EQUAL 0)
+        message(FATAL_ERROR "Failed to download ${ARCHIVE_NAME} using gh CLI: ${GH_ERROR}")
+    endif()
+    
+    # Verify file exists and check SHA512
+    if(NOT EXISTS "${ARCHIVE}")
+        message(FATAL_ERROR "Downloaded file not found: ${ARCHIVE}")
+    endif()
+    
+    # Verify SHA512 hash
+    file(SHA512 "${ARCHIVE}" DOWNLOADED_SHA512)
+    if(NOT DOWNLOADED_SHA512 STREQUAL ARCHIVE_SHA512)
+        message(FATAL_ERROR "SHA512 mismatch for ${ARCHIVE_NAME}. Expected: ${ARCHIVE_SHA512}, Got: ${DOWNLOADED_SHA512}")
+    endif()
+    
+    message(STATUS "Downloaded and verified ${ARCHIVE_NAME}")
+else()
+    # Fallback to vcpkg_download_distfile (may fail for private repos)
+    message(STATUS "gh CLI not found, using vcpkg_download_distfile (may fail for private repos)...")
+    vcpkg_download_distfile(
+        ARCHIVE
+        URLS "https://github.com/yordaa/ezdesign-step-bridge/releases/download/v${VERSION}/${ARCHIVE_NAME}"
+        FILENAME "${ARCHIVE_NAME}"
+        SHA512 "${ARCHIVE_SHA512}"
+    )
+endif()
 
 # Extract archive
 vcpkg_extract_source_archive(
