@@ -41,14 +41,23 @@ file(COPY "${CURRENT_BUILDTREES_DIR}/src/ezd2step-${VERSION}-${PLATFORM}/"
      DESTINATION "${CURRENT_PACKAGES_DIR}/tools/ezd2step"
      FILES_MATCHING PATTERN "*")
 
-# Optional: Copy to EZDesign resources directory if variable is set
-# This allows EZDesign to use the bundle directly from resources/
-if(DEFINED EZDESIGN_RESOURCES_DIR)
-    file(MAKE_DIRECTORY "${EZDESIGN_RESOURCES_DIR}/ezd2step")
-    file(COPY "${CURRENT_PACKAGES_DIR}/tools/ezd2step/"
-         DESTINATION "${EZDESIGN_RESOURCES_DIR}/ezd2step"
-         FILES_MATCHING PATTERN "*")
-    message(STATUS "ezd2step bundle copied to: ${EZDESIGN_RESOURCES_DIR}/ezd2step")
+# Copy to EZDesign resources directory
+# Try to detect EZDesign project root from VCPKG_ROOT
+# vcpkg is in vendor/vcpkg, so project root is VCPKG_ROOT/../..
+if(DEFINED VCPKG_ROOT)
+    get_filename_component(PROJECT_ROOT "${VCPKG_ROOT}/../.." ABSOLUTE)
+    if(EXISTS "${PROJECT_ROOT}/package.json" AND EXISTS "${PROJECT_ROOT}/resources")
+        set(RESOURCES_DIR "${PROJECT_ROOT}/resources/ezd2step")
+        file(MAKE_DIRECTORY "${RESOURCES_DIR}")
+        file(COPY "${CURRENT_PACKAGES_DIR}/tools/ezd2step/"
+             DESTINATION "${RESOURCES_DIR}"
+             FILES_MATCHING PATTERN "*")
+        message(STATUS "ezd2step bundle copied to: ${RESOURCES_DIR}")
+    else()
+        message(WARNING "Could not find EZDesign project root from VCPKG_ROOT. Bundle installed to: ${CURRENT_PACKAGES_DIR}/tools/ezd2step")
+    endif()
+else()
+    message(WARNING "VCPKG_ROOT not defined. Bundle installed to: ${CURRENT_PACKAGES_DIR}/tools/ezd2step")
 endif()
 
 # Cleanup temp extraction directory
