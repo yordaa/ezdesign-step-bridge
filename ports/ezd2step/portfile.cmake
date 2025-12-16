@@ -27,7 +27,8 @@ endif()
 find_program(GH_CLI gh)
 if(GH_CLI)
     message(STATUS "Downloading ${ARCHIVE_NAME} using gh CLI (private repo)...")
-    set(DOWNLOAD_DIR "${CURRENT_BUILDTREES_DIR}")
+    # Use vcpkg's downloads directory for consistency
+    set(DOWNLOAD_DIR "${DOWNLOADS}")
     set(ARCHIVE "${DOWNLOAD_DIR}/${ARCHIVE_NAME}")
     
     # Use gh CLI to download from private release
@@ -69,10 +70,41 @@ else()
 endif()
 
 # Extract archive
-vcpkg_extract_source_archive(
-    ARCHIVE "${ARCHIVE}"
-    SOURCE_PATH "${CURRENT_BUILDTREES_DIR}/src"
-)
+# When using gh CLI, we have the file in DOWNLOADS, so we can use vcpkg_extract_source_archive
+# But we need to pass just the filename, not the full path, or extract manually
+if(GH_CLI)
+    # Manual extraction for gh CLI downloads
+    set(EXTRACT_DIR "${CURRENT_BUILDTREES_DIR}/src")
+    file(MAKE_DIRECTORY "${EXTRACT_DIR}")
+    
+    if(ARCHIVE_SUFFIX STREQUAL ".tar.gz")
+        execute_process(
+            COMMAND ${CMAKE_COMMAND} -E tar xzf "${ARCHIVE}"
+            WORKING_DIRECTORY "${EXTRACT_DIR}"
+            RESULT_VARIABLE EXTRACT_RESULT
+        )
+    elseif(ARCHIVE_SUFFIX STREQUAL ".zip")
+        find_program(UNZIP unzip)
+        if(UNZIP)
+            execute_process(
+                COMMAND ${UNZIP} -q "${ARCHIVE}" -d "${EXTRACT_DIR}"
+                RESULT_VARIABLE EXTRACT_RESULT
+            )
+        else()
+            message(FATAL_ERROR "unzip not found. Cannot extract ${ARCHIVE_NAME}")
+        endif()
+    endif()
+    
+    if(NOT EXTRACT_RESULT EQUAL 0)
+        message(FATAL_ERROR "Failed to extract ${ARCHIVE_NAME}")
+    endif()
+else()
+    # Use vcpkg_extract_source_archive for vcpkg_download_distfile downloads
+    vcpkg_extract_source_archive(
+        SOURCE_PATH "${CURRENT_BUILDTREES_DIR}/src"
+        ARCHIVE "${ARCHIVE}"
+    )
+endif()
 
 # Install to vcpkg package directory (standard location)
 file(COPY "${CURRENT_BUILDTREES_DIR}/src/ezd2step-${VERSION}-${PLATFORM}/"
