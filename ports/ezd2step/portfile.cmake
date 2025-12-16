@@ -112,22 +112,36 @@ file(COPY "${CURRENT_BUILDTREES_DIR}/src/ezd2step-${VERSION}-${PLATFORM}/"
      FILES_MATCHING PATTERN "*")
 
 # Copy to EZDesign resources directory
-# Try to detect EZDesign project root from VCPKG_ROOT
-# vcpkg is in vendor/vcpkg, so project root is VCPKG_ROOT/../..
-if(DEFINED VCPKG_ROOT)
-    get_filename_component(PROJECT_ROOT "${VCPKG_ROOT}/../.." ABSOLUTE)
-    if(EXISTS "${PROJECT_ROOT}/package.json" AND EXISTS "${PROJECT_ROOT}/resources")
-        set(RESOURCES_DIR "${PROJECT_ROOT}/resources/ezd2step")
-        file(MAKE_DIRECTORY "${RESOURCES_DIR}")
-        file(COPY "${CURRENT_PACKAGES_DIR}/tools/ezd2step/"
-             DESTINATION "${RESOURCES_DIR}"
-             FILES_MATCHING PATTERN "*")
-        message(STATUS "ezd2step bundle copied to: ${RESOURCES_DIR}")
+# Detect project root from CURRENT_INSTALLED_DIR (lib/vcpkg_installed/arm64-osx)
+# Project root is CURRENT_INSTALLED_DIR/../..
+get_filename_component(PROJECT_ROOT "${CURRENT_INSTALLED_DIR}/../.." ABSOLUTE)
+message(STATUS "Detected project root: ${PROJECT_ROOT}")
+message(STATUS "Checking for package.json: ${PROJECT_ROOT}/package.json")
+message(STATUS "Checking for resources: ${PROJECT_ROOT}/resources")
+
+if(EXISTS "${PROJECT_ROOT}/package.json")
+    # Create resources directory if it doesn't exist
+    if(NOT EXISTS "${PROJECT_ROOT}/resources")
+        file(MAKE_DIRECTORY "${PROJECT_ROOT}/resources")
+        message(STATUS "Created resources directory: ${PROJECT_ROOT}/resources")
+    endif()
+    
+    set(RESOURCES_DIR "${PROJECT_ROOT}/resources/ezd2step")
+    file(MAKE_DIRECTORY "${RESOURCES_DIR}")
+    
+    message(STATUS "Copying ezd2step bundle from ${CURRENT_PACKAGES_DIR}/tools/ezd2step/ to ${RESOURCES_DIR}")
+    file(COPY "${CURRENT_PACKAGES_DIR}/tools/ezd2step/"
+         DESTINATION "${RESOURCES_DIR}"
+         FILES_MATCHING PATTERN "*")
+    
+    # Verify copy succeeded
+    if(EXISTS "${RESOURCES_DIR}/ezd2step")
+        message(STATUS "✓ ezd2step bundle copied successfully to: ${RESOURCES_DIR}")
     else()
-        message(WARNING "Could not find EZDesign project root from VCPKG_ROOT. Bundle installed to: ${CURRENT_PACKAGES_DIR}/tools/ezd2step")
+        message(WARNING "Copy completed but ezd2step binary not found at ${RESOURCES_DIR}/ezd2step")
     endif()
 else()
-    message(WARNING "VCPKG_ROOT not defined. Bundle installed to: ${CURRENT_PACKAGES_DIR}/tools/ezd2step")
+    message(WARNING "Could not find EZDesign project root (package.json not found at ${PROJECT_ROOT}/package.json). Bundle installed to: ${CURRENT_PACKAGES_DIR}/tools/ezd2step")
 endif()
 
 # Cleanup temp extraction directory
