@@ -1,10 +1,10 @@
 # OCCT - EzDesign to STEP Converter
 
-This is a fork of [Open CASCADE Technology (OCCT)](https://github.com/Open-Cascade-SAS/OCCT) that provides a conversion bridge from the **ezdesign** JSON format to **STEP** files. The primary tool in this repository is `json2step`, which converts ezdesign geometry data into industry-standard STEP format.
+This is a fork of [Open CASCADE Technology (OCCT)](https://github.com/Open-Cascade-SAS/OCCT) that provides a conversion bridge from the **ezdesign** JSON format to **STEP** files. The primary tool in this repository is `ezd2step`, which converts ezdesign geometry data into industry-standard STEP format.
 
 ## Overview
 
-This repository extends OCCT with a specialized conversion tool (`json2step`) that:
+This repository extends OCCT with a specialized conversion tool (`ezd2step`) that:
 
 - Reads ezdesign JSON files (`.ezd` format)
 - Converts B-spline surfaces, curves, and topology to OCCT's geometric kernel
@@ -16,10 +16,10 @@ This repository extends OCCT with a specialized conversion tool (`json2step`) th
 
 This repository contains code under two different licenses:
 
-### Proprietary Code (`tools/json2step/`)
+### Proprietary Code (`tools/ezd2step/`)
 
-All files in the `tools/json2step/` directory are **proprietary and confidential**. 
-See `tools/json2step/LICENSE` for terms and conditions.
+All files in the `tools/ezd2step/` directory are **proprietary and confidential**. 
+See `tools/ezd2step/LICENSE` for terms and conditions.
 
 **Copyright (c) 2025 Yang Song. All rights reserved.**
 
@@ -39,7 +39,7 @@ When distributing binaries that link against OCCT libraries:
 - OCCT portions remain under LGPL 2.1
 - You must provide OCCT source code (or offer it)
 - You must include LGPL license notices
-- Your proprietary code in `tools/json2step/` can remain proprietary
+- Your proprietary code in `tools/ezd2step/` can remain proprietary
 
 ## Building
 
@@ -57,29 +57,29 @@ When distributing binaries that link against OCCT libraries:
 # Configure build
 cmake -B build
 
-# Build json2step tool
-cmake --build build --target json2step -j8
+# Build ezd2step tool
+cmake --build build --target ezd2step -j8
 
 # Build test suite (optional)
 cmake --build build --target test_basic_models -j8
 ```
 
-The `json2step` executable will be located at:
-- `build/mac64/clang/bin/json2step` (macOS)
-- `build/linux64/gcc/bin/json2step` (Linux)
-- `build/win64/vc14/bin/json2step.exe` (Windows)
+The `ezd2step` executable will be located at:
+- `build/mac64/clang/bin/ezd2step` (macOS)
+- `build/linux64/gcc/bin/ezd2step` (Linux)
+- `build/win64/vc14/bin/ezd2step.exe` (Windows)
 
 ## Usage
 
 ### Basic Conversion
 
 ```bash
-json2step <input.ezd> <output.step>
+ezd2step <input.ezd> <output.step>
 ```
 
 Example:
 ```bash
-json2step model.ezd model.step
+ezd2step model.ezd model.step
 ```
 
 ### Test Suite
@@ -87,8 +87,8 @@ json2step model.ezd model.step
 Run the test suite to verify conversion on sample models:
 
 ```bash
-# Set path to json2step (if not in PATH)
-export JSON2STEP_PATH=build/mac64/clang/bin/json2step
+# Set path to ezd2step (if not in PATH)
+export EZD2STEP_PATH=build/mac64/clang/bin/ezd2step
 
 # Run tests
 build/mac64/clang/bin/test_basic_models
@@ -107,8 +107,8 @@ Each test:
 ## Project Structure
 
 ```
-tools/json2step/
-├── json2step.cxx              # Main executable
+tools/ezd2step/
+├── ezd2step.cxx              # Main executable
 ├── EzDesignJsonReader.*      # JSON file parser
 ├── EzDesignToOCCTConverter.* # Core conversion logic
 ├── EzDesignTypes.hxx         # Data structure definitions
