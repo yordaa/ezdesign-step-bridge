@@ -4,10 +4,13 @@
 
 name: WebAssembly build (Ubuntu)
 
+# CI disabled - uncomment below to re-enable
+# on:
+#   push:
+#     branches:
+#       - 'master'
 on:
-  push:
-    branches:
-      - 'master'
+  workflow_dispatch:  # Manual trigger only
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
