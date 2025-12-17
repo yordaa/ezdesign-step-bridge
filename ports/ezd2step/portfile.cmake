@@ -1,152 +1,101 @@
 # Portfile for ezd2step - EZDesign to STEP converter
 # Downloads pre-built bundle from GitHub Releases
 
-# Version is defined in vcpkg.json and available as ${VERSION}
-# For v1.0.0, VERSION will be "1.0.0"
-
 # Detect platform using vcpkg variables (not APPLE/WIN32 which don't work in script mode)
 if(VCPKG_TARGET_IS_OSX AND VCPKG_TARGET_ARCHITECTURE STREQUAL "arm64")
     set(PLATFORM "macos-arm64")
-    set(ARCHIVE_SUFFIX ".tar.gz")
     set(ARCHIVE_NAME "ezd2step-${VERSION}-macos-arm64.tar.gz")
-    # SHA512 hash for macOS arm64 bundle (v1.0.0)
-    set(ARCHIVE_SHA512 "f8b856f56cac6b09169d7170f47045b17e5663a7b137d5b8bc484297e4e84bbc038a1945e6a2a15eecb315b90f4b2a25e6420d1d9f91433b77b96cdb19c86062")
+    set(ARCHIVE_SHA256 "ed1f9b706ff3df5820bfeab04852d15a4384c3e565f0bd8b806f9267c52140e8")
 elseif(VCPKG_TARGET_IS_WINDOWS AND VCPKG_TARGET_ARCHITECTURE STREQUAL "x64")
     set(PLATFORM "windows-x64")
-    set(ARCHIVE_SUFFIX ".zip")
     set(ARCHIVE_NAME "ezd2step-${VERSION}-windows-x64.zip")
-    set(ARCHIVE_SHA512 "9db3219873dfc0090d45c0c4c38b59832a0da7c6dd28d2b67aed503490168f74545de5e2d6a53012b9c29d5383d6ac811b4d9f343421f56180b6d992fb17f820")
+    set(ARCHIVE_SHA256 "bff27413d49433ac820415411f970ff9b6142cfc584d58abe2441d8ab2b987ba")
 else()
-    message(FATAL_ERROR "Unsupported platform: ${VCPKG_CMAKE_SYSTEM_NAME} ${VCPKG_TARGET_ARCHITECTURE}. Supported: macOS arm64")
+    message(FATAL_ERROR "Unsupported platform")
 endif()
 
-# Download bundle from GitHub Releases
-# For private repos, use gh CLI which handles authentication automatically
-find_program(GH_CLI gh)
-if(GH_CLI)
-    # Use vcpkg's downloads directory for consistency
-    set(DOWNLOAD_DIR "${DOWNLOADS}")
-    set(ARCHIVE "${DOWNLOAD_DIR}/${ARCHIVE_NAME}")
-    
-    # Check if file already exists and verify its hash
-    set(NEED_DOWNLOAD TRUE)
-    if(EXISTS "${ARCHIVE}")
-        message(STATUS "File ${ARCHIVE_NAME} already exists, verifying SHA512...")
-        file(SHA512 "${ARCHIVE}" EXISTING_SHA512)
-        if(EXISTING_SHA512 STREQUAL ARCHIVE_SHA512)
-            message(STATUS "Existing file hash matches, skipping download")
-            set(NEED_DOWNLOAD FALSE)
-        else()
-            message(STATUS "Existing file hash mismatch, will re-download with --clobber")
-        endif()
+find_program(CURL curl REQUIRED)
+
+set(ARCHIVE "${DOWNLOADS}/${ARCHIVE_NAME}")
+
+set(NEED_DOWNLOAD TRUE)
+if(EXISTS "${ARCHIVE}")
+    file(SHA256 "${ARCHIVE}" EXISTING_SHA256)
+    if(EXISTING_SHA256 STREQUAL ARCHIVE_SHA256)
+        set(NEED_DOWNLOAD FALSE)
+    endif()
+endif()
+
+if(NEED_DOWNLOAD)
+    set(AUTH_TOKEN "$ENV{PAT_TOKEN}")
+    if("${AUTH_TOKEN}" STREQUAL "")
+        message(FATAL_ERROR "PAT_TOKEN is required and must not be empty")
     endif()
     
-    if(NEED_DOWNLOAD)
-        message(STATUS "Downloading ${ARCHIVE_NAME} using gh CLI (private repo)...")
-        # Use gh CLI to download from private release with --clobber to overwrite if exists
-        execute_process(
-            COMMAND ${GH_CLI} release download v${VERSION}
-                --repo yordaa/ezdesign-step-bridge
-                --pattern "${ARCHIVE_NAME}"
-                --dir "${DOWNLOAD_DIR}"
-                --clobber
-            RESULT_VARIABLE GH_RESULT
-            ERROR_VARIABLE GH_ERROR
-            OUTPUT_VARIABLE GH_OUTPUT
-        )
-        
-        if(NOT GH_RESULT EQUAL 0)
-            message(FATAL_ERROR "Failed to download ${ARCHIVE_NAME} using gh CLI: ${GH_ERROR}")
-        endif()
-        
-        # Verify file exists and check SHA512
-        if(NOT EXISTS "${ARCHIVE}")
-            message(FATAL_ERROR "Downloaded file not found: ${ARCHIVE}")
-        endif()
-        
-        # Verify SHA512 hash
-        file(SHA512 "${ARCHIVE}" DOWNLOADED_SHA512)
-        if(NOT DOWNLOADED_SHA512 STREQUAL ARCHIVE_SHA512)
-            message(FATAL_ERROR "SHA512 mismatch for ${ARCHIVE_NAME}. Expected: ${ARCHIVE_SHA512}, Got: ${DOWNLOADED_SHA512}")
-        endif()
-        
-        message(STATUS "Downloaded and verified ${ARCHIVE_NAME}")
-    endif()
-else()
-    # Fallback to vcpkg_download_distfile (may fail for private repos)
-    message(STATUS "gh CLI not found, using vcpkg_download_distfile (may fail for private repos)...")
-    vcpkg_download_distfile(
-        ARCHIVE
-        URLS "https://github.com/yordaa/ezdesign-step-bridge/releases/download/v${VERSION}/${ARCHIVE_NAME}"
-        FILENAME "${ARCHIVE_NAME}"
-        SHA512 "${ARCHIVE_SHA512}"
+    set(RELEASE_INFO "${CURRENT_BUILDTREES_DIR}/release_info.json")
+    execute_process(
+        COMMAND ${CURL} -fsSL
+            -H "Accept: application/vnd.github+json"
+            -H "Authorization: token ${AUTH_TOKEN}"
+            -H "X-GitHub-Api-Version: 2022-11-28"
+            -o "${RELEASE_INFO}"
+            "https://api.github.com/repos/yordaa/ezdesign-step-bridge/releases/tags/v${VERSION}"
+        RESULT_VARIABLE CURL_RESULT ERROR_VARIABLE CURL_ERROR
     )
-endif()
+    if(CURL_RESULT)
+        message(FATAL_ERROR "Failed to fetch release: ${CURL_ERROR}")
+    endif()
 
-# Extract archive
-# When using gh CLI, we have the file in DOWNLOADS, so we can use vcpkg_extract_source_archive
-# But we need to pass just the filename, not the full path, or extract manually
-if(GH_CLI)
-    # Manual extraction for gh CLI downloads
-    set(EXTRACT_DIR "${CURRENT_BUILDTREES_DIR}/src")
-    file(MAKE_DIRECTORY "${EXTRACT_DIR}")
-    
-    if(ARCHIVE_SUFFIX STREQUAL ".tar.gz")
-        execute_process(
-            COMMAND ${CMAKE_COMMAND} -E tar xzf "${ARCHIVE}"
-            WORKING_DIRECTORY "${EXTRACT_DIR}"
-            RESULT_VARIABLE EXTRACT_RESULT
-        )
-    elseif(ARCHIVE_SUFFIX STREQUAL ".zip")
-        find_program(UNZIP unzip)
-        if(UNZIP)
-            execute_process(
-                COMMAND ${UNZIP} -q "${ARCHIVE}" -d "${EXTRACT_DIR}"
-                RESULT_VARIABLE EXTRACT_RESULT
-            )
-        else()
-            message(FATAL_ERROR "unzip not found. Cannot extract ${ARCHIVE_NAME}")
+    file(READ "${RELEASE_INFO}" RELEASE_JSON)
+
+    string(JSON ASSETS_LEN LENGTH "${RELEASE_JSON}" assets)
+    message(STATUS "GitHub release assets count: ${ASSETS_LEN}")
+
+    set(ASSET_ID "")
+    math(EXPR LAST_INDEX "${ASSETS_LEN} - 1")
+    foreach(i RANGE 0 ${LAST_INDEX})
+        string(JSON ASSET_NAME GET "${RELEASE_JSON}" assets ${i} name)
+        if(ASSET_NAME STREQUAL "${ARCHIVE_NAME}")
+            string(JSON ASSET_ID GET "${RELEASE_JSON}" assets ${i} id)
+            break()
         endif()
+    endforeach()
+
+    if(ASSET_ID STREQUAL "")
+        message(FATAL_ERROR "Asset ${ARCHIVE_NAME} not found")
+    endif()
+
+    message(STATUS "Using GitHub release asset id: ${ASSET_ID}")
+    
+    execute_process(
+        COMMAND ${CURL} -fsSL
+            -H "Accept: application/octet-stream"
+            -H "Authorization: token ${AUTH_TOKEN}"
+            -H "X-GitHub-Api-Version: 2022-11-28"
+            -o "${ARCHIVE}"
+            "https://api.github.com/repos/yordaa/ezdesign-step-bridge/releases/assets/${ASSET_ID}"
+        RESULT_VARIABLE CURL_RESULT ERROR_VARIABLE CURL_ERROR
+    )
+    if(CURL_RESULT)
+        message(FATAL_ERROR "Download failed: ${CURL_ERROR}")
     endif()
     
-    if(NOT EXTRACT_RESULT EQUAL 0)
-        message(FATAL_ERROR "Failed to extract ${ARCHIVE_NAME}")
+    file(SHA256 "${ARCHIVE}" DOWNLOADED_SHA256)
+    if(NOT DOWNLOADED_SHA256 STREQUAL ARCHIVE_SHA256)
+        message(FATAL_ERROR "SHA256 mismatch")
     endif()
-else()
-    # Use vcpkg_extract_source_archive for vcpkg_download_distfile downloads
-    vcpkg_extract_source_archive(
-        SOURCE_PATH "${CURRENT_BUILDTREES_DIR}/src"
-        ARCHIVE "${ARCHIVE}"
-    )
+    
+    file(REMOVE "${RELEASE_INFO}")
 endif()
 
-# Install to vcpkg package directory (standard location)
+set(EXTRACT_DIR "${CURRENT_BUILDTREES_DIR}/src")
+
+file(ARCHIVE_EXTRACT
+    INPUT "${ARCHIVE}"
+    DESTINATION "${EXTRACT_DIR}"
+)
+
 file(COPY "${CURRENT_BUILDTREES_DIR}/src/ezd2step-${VERSION}-${PLATFORM}/"
-     DESTINATION "${CURRENT_PACKAGES_DIR}/tools/ezd2step"
-     FILES_MATCHING PATTERN "*")
+     DESTINATION "${CURRENT_PACKAGES_DIR}/tools/ezd2step" FILES_MATCHING PATTERN "*")
 
-# Copy to EZDesign resources directory
-# Detect project root from CURRENT_INSTALLED_DIR (lib/vcpkg_installed/arm64-osx)
-# Project root is CURRENT_INSTALLED_DIR/../../.. (three levels up)
-get_filename_component(PROJECT_ROOT "${CURRENT_INSTALLED_DIR}/../../.." ABSOLUTE)
-
-if(EXISTS "${PROJECT_ROOT}/package.json")
-    # Create resources directory if it doesn't exist
-    if(NOT EXISTS "${PROJECT_ROOT}/resources")
-        file(MAKE_DIRECTORY "${PROJECT_ROOT}/resources")
-    endif()
-    
-    set(RESOURCES_DIR "${PROJECT_ROOT}/resources/ezd2step")
-    file(MAKE_DIRECTORY "${RESOURCES_DIR}")
-    
-    file(COPY "${CURRENT_PACKAGES_DIR}/tools/ezd2step/"
-         DESTINATION "${RESOURCES_DIR}"
-         FILES_MATCHING PATTERN "*")
-    
-    message(STATUS "ezd2step bundle installed to: ${RESOURCES_DIR}")
-else()
-    message(WARNING "Could not find EZDesign project root. Bundle installed to: ${CURRENT_PACKAGES_DIR}/tools/ezd2step")
-endif()
-
-# Cleanup temp extraction directory
-file(REMOVE_RECURSE "${CURRENT_BUILDTREES_DIR}/src")
+file(REMOVE_RECURSE "${EXTRACT_DIR}")
