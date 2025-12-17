@@ -45,6 +45,12 @@ elseif(nlohmann_json_INCLUDE_DIR)
   target_include_directories(${PROJECT_NAME} PRIVATE ${nlohmann_json_INCLUDE_DIR})
 endif()
 
+# Require C++17 for structured bindings and other modern features
+set_target_properties(${PROJECT_NAME} PROPERTIES
+  CXX_STANDARD 17
+  CXX_STANDARD_REQUIRED ON
+)
+
 # Define version for ezd2step
 target_compile_definitions(${PROJECT_NAME} PRIVATE
   EZD2STEP_VERSION_MAJOR=${PROJECT_VERSION_MAJOR}
