@@ -198,10 +198,15 @@ if (APPLE)
     message(FATAL_ERROR "Failed to create tar archive")
   endif()
 elseif(WIN32)
-  # Windows: Use CMake's built-in zip or external tool
-  # For now, create a note that zip should be created manually or via CI
-  message(STATUS "Windows bundle created at: ${BUNDLE_DIR}")
-  message(STATUS "Create ZIP archive manually or via CI: ${ARCHIVE_PATH}")
+  # Windows: Use CMake's tar command with zip format
+  execute_process(
+    COMMAND ${CMAKE_COMMAND} -E tar "cf" "${ARCHIVE_PATH}" --format=zip "${BUNDLE_NAME}"
+    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/bundles"
+    RESULT_VARIABLE ZIP_RESULT
+  )
+  if (NOT ZIP_RESULT EQUAL 0)
+    message(FATAL_ERROR "Failed to create ZIP archive")
+  endif()
 endif()
 
 message(STATUS "Bundle created: ${BUNDLE_DIR}")
