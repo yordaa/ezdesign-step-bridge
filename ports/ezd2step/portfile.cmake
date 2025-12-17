@@ -131,33 +131,23 @@ file(COPY "${CURRENT_BUILDTREES_DIR}/src/ezd2step-${VERSION}-${PLATFORM}/"
 # Detect project root from CURRENT_INSTALLED_DIR (lib/vcpkg_installed/arm64-osx)
 # Project root is CURRENT_INSTALLED_DIR/../../.. (three levels up)
 get_filename_component(PROJECT_ROOT "${CURRENT_INSTALLED_DIR}/../../.." ABSOLUTE)
-message(STATUS "Detected project root: ${PROJECT_ROOT}")
-message(STATUS "Checking for package.json: ${PROJECT_ROOT}/package.json")
-message(STATUS "Checking for resources: ${PROJECT_ROOT}/resources")
 
 if(EXISTS "${PROJECT_ROOT}/package.json")
     # Create resources directory if it doesn't exist
     if(NOT EXISTS "${PROJECT_ROOT}/resources")
         file(MAKE_DIRECTORY "${PROJECT_ROOT}/resources")
-        message(STATUS "Created resources directory: ${PROJECT_ROOT}/resources")
     endif()
     
     set(RESOURCES_DIR "${PROJECT_ROOT}/resources/ezd2step")
     file(MAKE_DIRECTORY "${RESOURCES_DIR}")
     
-    message(STATUS "Copying ezd2step bundle from ${CURRENT_PACKAGES_DIR}/tools/ezd2step/ to ${RESOURCES_DIR}")
     file(COPY "${CURRENT_PACKAGES_DIR}/tools/ezd2step/"
          DESTINATION "${RESOURCES_DIR}"
          FILES_MATCHING PATTERN "*")
     
-    # Verify copy succeeded
-    if(EXISTS "${RESOURCES_DIR}/ezd2step")
-        message(STATUS "✓ ezd2step bundle copied successfully to: ${RESOURCES_DIR}")
-    else()
-        message(WARNING "Copy completed but ezd2step binary not found at ${RESOURCES_DIR}/ezd2step")
-    endif()
+    message(STATUS "ezd2step bundle installed to: ${RESOURCES_DIR}")
 else()
-    message(WARNING "Could not find EZDesign project root (package.json not found at ${PROJECT_ROOT}/package.json). Bundle installed to: ${CURRENT_PACKAGES_DIR}/tools/ezd2step")
+    message(WARNING "Could not find EZDesign project root. Bundle installed to: ${CURRENT_PACKAGES_DIR}/tools/ezd2step")
 endif()
 
 # Cleanup temp extraction directory
