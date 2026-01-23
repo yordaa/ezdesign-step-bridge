@@ -1,7 +1,9 @@
 # Distribution Capability
 
-## Requirements
+## Purpose
 
+The distribution capability provides mechanisms for packaging and distributing the `ezd2step` executable along with required OCCT dynamic libraries as self-contained, redistributable bundles for macOS and Windows platforms. This enables end users to deploy and run `ezd2step` without requiring separate OCCT installation or complex dependency management.
+## Requirements
 ### Requirement: Redistributable Binary Bundles
 
 The system SHALL provide redistributable binary bundles containing the `ezd2step` executable and required OCCT dynamic libraries for macOS and Windows platforms.
@@ -97,6 +99,12 @@ The system SHALL publish distribution artifacts via CI/CD with versioning and ch
 - **THEN** artifacts are published to GitHub Releases (or equivalent)
 - **AND** artifacts are attached to versioned release
 - **AND** release notes include version information and changelog
+
+#### Scenario: Windows x64 bundle creation
+- **GIVEN** a Windows x64 build of ezd2step
+- **WHEN** the package_ezd2step_bundle target is run
+- **THEN** ezd2step.exe and required OCCT DLLs are bundled
+- **AND** a ZIP archive is created as `ezd2step-<version>-windows-x64.zip`
 
 ### Requirement: Bundle Validation
 
