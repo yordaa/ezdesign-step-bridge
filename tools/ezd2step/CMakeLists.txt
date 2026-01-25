@@ -1,4 +1,4 @@
-project(ezd2step VERSION 1.0.0)
+project(ezd2step VERSION 1.0.1)
 
 # Detect nlohmann/json
 find_package(nlohmann_json QUIET)
