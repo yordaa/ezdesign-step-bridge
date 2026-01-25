@@ -17,21 +17,24 @@ The ezd2step tool has been updated with the following changes:
 - Document version checking (requires >= 0.1.0)
 - Made `surface_data` optional for SubdivisionFace entities
 
-**Updated commit in ezdesign-step-bridge (merged to main):** `e802c382b9b04955d3ce5a11bbbee43c40a46ae1`
+**Updated version:** v1.0.1 (with new format support)
+**Latest commit in ezdesign-step-bridge (merged to main):** `4337526696`
 
 ## Task
 
 1. **Locate vcpkg configuration file** in the EzDesign repository (likely `vcpkg-configuration.json` or similar)
 
-2. **Update the baseline commit** for the `ezdesign-step-bridge` registry to point to the merged commit on main:
+2. **Update the baseline commit** for the `ezdesign-step-bridge` registry to point to the latest commit on main:
    ```json
    {
      "kind": "git",
      "repository": "https://github.com/yordaa/ezdesign-step-bridge",
-     "baseline": "e802c382b9b04955d3ce5a11bbbee43c40a46ae1",
+     "baseline": "4337526696",
      "packages": ["ezd2step"]
    }
    ```
+   
+   **Note:** This will install ezd2step v1.0.1 which includes support for the new save format.
 
 3. **Verify the update** by:
    - Checking that vcpkg can resolve the ezd2step package
