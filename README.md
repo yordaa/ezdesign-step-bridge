@@ -47,22 +47,85 @@ When distributing binaries that link against OCCT libraries:
 
 - CMake 3.12 or later
 - C++ compiler with C++17 support (Clang, GCC, or MSVC)
-- [nlohmann/json](https://github.com/nlohmann/json) library
-  - macOS: `brew install nlohmann-json`
-  - Windows: Use vcpkg or build from source
+- [vcpkg](https://github.com/microsoft/vcpkg) - Package manager for dependencies
+
+### Setup vcpkg
+
+This project uses vcpkg manifest mode to automatically manage dependencies. Set up vcpkg:
+
+```bash
+# Clone vcpkg into project directory (one-time setup)
+git clone https://github.com/microsoft/vcpkg.git ./vcpkg
+
+# Bootstrap vcpkg
+./vcpkg/bootstrap-vcpkg.sh  # On macOS/Linux
+# or
+.\vcpkg\bootstrap-vcpkg.bat  # On Windows
+```
 
 ### Build Instructions
 
 ```bash
-# Configure build
-cmake -B build
+# ============================================
+# Step 1: Setup vcpkg (one-time setup)
+# ============================================
 
-# Build ezd2step tool
+# Clone vcpkg into project directory
+git clone https://github.com/microsoft/vcpkg.git ./vcpkg
+
+# Bootstrap vcpkg
+./vcpkg/bootstrap-vcpkg.sh  # On macOS/Linux
+# or
+.\vcpkg\bootstrap-vcpkg.bat  # On Windows
+
+
+# ============================================
+# Step 2: Configure CMake
+# ============================================
+
+cmake -B build \
+  -DCMAKE_TOOLCHAIN_FILE=./vcpkg/scripts/buildsystems/vcpkg.cmake \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DBUILD_MINIMAL_DISTRIBUTION=ON \
+  -DBUILD_MINIMAL_PROFILE=step-export-minimal \
+  -DUSE_TCL=OFF \
+  -DUSE_TK=OFF \
+  -DBUILD_MODULE_Draw=OFF \
+  -DUSE_FREETYPE=OFF
+
+
+# ============================================
+# Step 3: Build ezd2step
+# ============================================
+
 cmake --build build --target ezd2step -j8
 
-# Build test suite (optional)
+
+# ============================================
+# Step 4: Create Bundle
+# ============================================
+
+cmake --build build --target package_ezd2step_bundle
+
+
+# ============================================
+# Step 5: Generate Checksums
+# ============================================
+
+./tools/ezd2step/create_checksums.sh
+```
+
+**Optional: Build test suite**
+```bash
 cmake --build build --target test_basic_models -j8
 ```
+
+**How it works:**
+- vcpkg automatically detects `tools/ezd2step/vcpkg.json` manifest file
+- Downloads and installs `nlohmann-json` automatically
+- Makes dependencies available to CMake via `find_package`
+
+**Note**: The build automatically disables unnecessary modules (TK, Draw, FreeType) for ezd2step since it's a command-line tool.
 
 The `ezd2step` executable will be located at:
 - `build/mac64/clang/bin/ezd2step` (macOS)

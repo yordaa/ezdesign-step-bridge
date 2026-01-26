@@ -1,49 +1,28 @@
 project(ezd2step VERSION 1.0.1)
 
-# Detect nlohmann/json
-find_package(nlohmann_json QUIET)
-if (nlohmann_json_FOUND)
-  message(STATUS "Found nlohmann/json via find_package")
-else()
-  # Try Homebrew paths on macOS
-  if (APPLE)
-    if (EXISTS "/opt/homebrew/include/nlohmann/json.hpp")
-      set(nlohmann_json_INCLUDE_DIR "/opt/homebrew/include")
-      message(STATUS "Found nlohmann/json in Homebrew: ${nlohmann_json_INCLUDE_DIR}")
-    elseif (EXISTS "/usr/local/include/nlohmann/json.hpp")
-      set(nlohmann_json_INCLUDE_DIR "/usr/local/include")
-      message(STATUS "Found nlohmann/json in Homebrew: ${nlohmann_json_INCLUDE_DIR}")
-    endif()
-  endif()
-  
-  if (NOT nlohmann_json_INCLUDE_DIR)
-    message(FATAL_ERROR "nlohmann/json not found. Please install it via:\n  macOS: brew install nlohmann-json\n  Linux: apt-get install nlohmann-json-dev (or equivalent)\n  Windows: vcpkg install nlohmann-json")
-  endif()
-endif()
+# Find nlohmann/json (uses vcpkg manifest mode when vcpkg toolchain is used)
+find_package(nlohmann_json REQUIRED)
 
 # Include OCCT build system
 OCCT_INCLUDE_CMAKE_FILE (adm/cmake/occt_toolkit_prepare_tool)
 set (EXECUTABLE_PROJECT ON)
-# Disable Qt for this tool (ezd2step doesn't need Qt)
+# Disable unnecessary modules for ezd2step (command-line tool, no GUI)
 set (USE_QT OFF)
+set (USE_TK OFF)
+set (USE_TCL OFF)
+set (BUILD_MODULE_Draw OFF)
+set (USE_FREETYPE OFF)
 OCCT_INCLUDE_CMAKE_FILE (adm/cmake/occt_toolkit)
 unset (EXECUTABLE_PROJECT)
 unset (USE_QT)
+unset (USE_TK)
+unset (USE_TCL)
+unset (BUILD_MODULE_Draw)
+unset (USE_FREETYPE)
 
-# Add nlohmann/json include directory
+# Link against nlohmann/json
 # Note: This must be after occt_toolkit.cmake creates the target
-if (nlohmann_json_FOUND)
-  # When found via find_package, use the imported target or INCLUDE_DIRS
-  if (TARGET nlohmann_json::nlohmann_json)
-    target_link_libraries(${PROJECT_NAME} PRIVATE nlohmann_json::nlohmann_json)
-  else()
-    include_directories(${nlohmann_json_INCLUDE_DIRS})
-    target_include_directories(${PROJECT_NAME} PRIVATE ${nlohmann_json_INCLUDE_DIRS})
-  endif()
-elseif(nlohmann_json_INCLUDE_DIR)
-  include_directories(${nlohmann_json_INCLUDE_DIR})
-  target_include_directories(${PROJECT_NAME} PRIVATE ${nlohmann_json_INCLUDE_DIR})
-endif()
+target_link_libraries(${PROJECT_NAME} PRIVATE nlohmann_json::nlohmann_json)
 
 # Require C++17 for structured bindings and other modern features
 set_target_properties(${PROJECT_NAME} PROPERTIES
@@ -92,15 +71,7 @@ set_target_properties(ezd2step_capi PROPERTIES
 )
 
 # Link against nlohmann/json
-if (nlohmann_json_FOUND)
-  if (TARGET nlohmann_json::nlohmann_json)
-    target_link_libraries(ezd2step_capi PRIVATE nlohmann_json::nlohmann_json)
-  else()
-    target_include_directories(ezd2step_capi PRIVATE ${nlohmann_json_INCLUDE_DIRS})
-  endif()
-elseif(nlohmann_json_INCLUDE_DIR)
-  target_include_directories(ezd2step_capi PRIVATE ${nlohmann_json_INCLUDE_DIR})
-endif()
+target_link_libraries(ezd2step_capi PRIVATE nlohmann_json::nlohmann_json)
 
 # Link against OCCT libraries (same as executable)
 # Link against OCCT library targets
