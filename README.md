@@ -83,29 +83,21 @@ git clone https://github.com/microsoft/vcpkg.git ./vcpkg
 # Step 2: Configure CMake
 # ============================================
 
-cmake -B build \
-  -DCMAKE_TOOLCHAIN_FILE=./vcpkg/scripts/buildsystems/vcpkg.cmake \
-  -DCMAKE_BUILD_TYPE=Release \
-  -DBUILD_MINIMAL_DISTRIBUTION=ON \
-  -DBUILD_MINIMAL_PROFILE=step-export-minimal \
-  -DUSE_TCL=OFF \
-  -DUSE_TK=OFF \
-  -DBUILD_MODULE_Draw=OFF \
-  -DUSE_FREETYPE=OFF
+cmake -B build -DCMAKE_TOOLCHAIN_FILE=./vcpkg/scripts/buildsystems/vcpkg.cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_MINIMAL_DISTRIBUTION=ON -DBUILD_MINIMAL_PROFILE=step-export-minimal -DUSE_TCL=OFF -DUSE_TK=OFF -DBUILD_MODULE_Draw=OFF -DUSE_FREETYPE=OFF
 
 
 # ============================================
 # Step 3: Build ezd2step
 # ============================================
 
-cmake --build build --target ezd2step -j8
+cmake --build build --config Release --target ezd2step -j8
 
 
 # ============================================
 # Step 4: Create Bundle
 # ============================================
 
-cmake --build build --target package_ezd2step_bundle
+cmake --build build --config Release --target package_ezd2step_bundle
 
 
 # ============================================
@@ -117,7 +109,7 @@ cmake --build build --target package_ezd2step_bundle
 
 **Optional: Build test suite**
 ```bash
-cmake --build build --target test_basic_models -j8
+cmake --build build --config Release --target test_basic_models -j8
 ```
 
 **How it works:**
