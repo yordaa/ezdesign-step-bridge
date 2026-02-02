@@ -22,16 +22,11 @@ if(EXISTS "${ARCHIVE}")
 endif()
 
 if(NEED_DOWNLOAD)
-    set(AUTH_TOKEN "$ENV{PAT_TOKEN}")
-    if("${AUTH_TOKEN}" STREQUAL "")
-        message(FATAL_ERROR "PAT_TOKEN is required and must not be empty")
-    endif()
     
     set(RELEASE_INFO "${CURRENT_BUILDTREES_DIR}/release_info.json")
     execute_process(
         COMMAND ${CURL} -fsSL
             -H "Accept: application/vnd.github+json"
-            -H "Authorization: token ${AUTH_TOKEN}"
             -H "X-GitHub-Api-Version: 2022-11-28"
             -o "${RELEASE_INFO}"
             "https://api.github.com/repos/yordaa/ezdesign-step-bridge/releases/tags/v${VERSION}"
@@ -65,7 +60,6 @@ if(NEED_DOWNLOAD)
     execute_process(
         COMMAND ${CURL} -fsSL
             -H "Accept: application/octet-stream"
-            -H "Authorization: token ${AUTH_TOKEN}"
             -H "X-GitHub-Api-Version: 2022-11-28"
             -o "${ARCHIVE}"
             "https://api.github.com/repos/yordaa/ezdesign-step-bridge/releases/assets/${ASSET_ID}"
