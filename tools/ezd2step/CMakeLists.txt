@@ -1,4 +1,4 @@
-project(ezd2step VERSION 1.0.1)
+project(ezd2step VERSION 1.0.2)
 
 # Find nlohmann/json (uses vcpkg manifest mode when vcpkg toolchain is used)
 find_package(nlohmann_json REQUIRED)
