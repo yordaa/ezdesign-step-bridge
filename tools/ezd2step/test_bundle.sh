@@ -43,22 +43,42 @@ echo "ezd2step Bundle Smoke Tests"
 echo "=========================================="
 echo ""
 
-# Check required commands
-check_command "tar"
-check_command "sha256sum"
-
 # Parse arguments
 BUNDLE_ARCHIVE="${1:-build/bundles/ezd2step-1.0.0-macos-arm64.tar.gz}"
 TEST_DIR="${2:-/tmp/ezd2step_bundle_test}"
+SAMPLE_EZD="${3:-}"
 
 if [ ! -f "$BUNDLE_ARCHIVE" ]; then
     echo -e "${RED}Error: Bundle archive not found: $BUNDLE_ARCHIVE${NC}"
-    echo "Usage: $0 [bundle_archive] [test_directory]"
+    echo "Usage: $0 [bundle_archive] [test_directory] [sample_ezd]"
     exit 1
 fi
 
+BUNDLE_ARCHIVE="$(cd "$(dirname "$BUNDLE_ARCHIVE")" && pwd)/$(basename "$BUNDLE_ARCHIVE")"
+if [ -n "$SAMPLE_EZD" ] && [ -f "$SAMPLE_EZD" ]; then
+    SAMPLE_EZD="$(cd "$(dirname "$SAMPLE_EZD")" && pwd)/$(basename "$SAMPLE_EZD")"
+fi
+
+case "$BUNDLE_ARCHIVE" in
+    *.tar.gz)
+        check_command "tar"
+        EXTRACT_COMMAND=(tar -xzf "$BUNDLE_ARCHIVE")
+        ;;
+    *.zip)
+        check_command "unzip"
+        EXTRACT_COMMAND=(unzip -q "$BUNDLE_ARCHIVE")
+        ;;
+    *)
+        echo -e "${RED}Error: Unsupported bundle archive format: $BUNDLE_ARCHIVE${NC}"
+        exit 1
+        ;;
+esac
+
 echo "Bundle archive: $BUNDLE_ARCHIVE"
 echo "Test directory: $TEST_DIR"
+if [ -n "$SAMPLE_EZD" ]; then
+    echo "Sample EZD: $SAMPLE_EZD"
+fi
 echo ""
 
 # Clean up test directory
@@ -68,7 +88,7 @@ mkdir -p "$TEST_DIR"
 # Extract bundle
 echo "Extracting bundle..."
 cd "$TEST_DIR"
-tar -xzf "$BUNDLE_ARCHIVE" || {
+"${EXTRACT_COMMAND[@]}" || {
     echo -e "${RED}Error: Failed to extract bundle${NC}"
     exit 1
 }
@@ -200,7 +220,32 @@ fi
 
 echo ""
 echo "=========================================="
-echo "Test 8: README.txt exists"
+echo "Test 8: Convert sample .ezd file"
+echo "=========================================="
+if [ -n "$SAMPLE_EZD" ]; then
+    if [ ! -f "$SAMPLE_EZD" ]; then
+        print_test "Sample EZD exists" "FAIL"
+        echo "  Missing sample: $SAMPLE_EZD"
+    else
+        cp "$SAMPLE_EZD" ./sample.ezd
+        ./ezd2step sample.ezd sample.step > conversion.log 2>&1
+        CONVERSION_EXIT=$?
+        if [ $CONVERSION_EXIT -eq 0 ] && [ -s sample.step ]; then
+            print_test "Sample conversion creates STEP output" "PASS"
+        else
+            print_test "Sample conversion creates STEP output" "FAIL"
+            echo "  Exit code: $CONVERSION_EXIT"
+            echo "  Conversion output:"
+            cat conversion.log
+        fi
+    fi
+else
+    print_test "Sample conversion skipped (no sample provided)" "PASS"
+fi
+
+echo ""
+echo "=========================================="
+echo "Test 9: README.txt exists"
 echo "=========================================="
 if [ -f "README.txt" ]; then
     print_test "README.txt exists" "PASS"
@@ -210,7 +255,7 @@ fi
 
 echo ""
 echo "=========================================="
-echo "Test 9: LICENSE.txt exists"
+echo "Test 10: LICENSE.txt exists"
 echo "=========================================="
 if [ -f "LICENSE.txt" ]; then
     print_test "LICENSE.txt exists" "PASS"

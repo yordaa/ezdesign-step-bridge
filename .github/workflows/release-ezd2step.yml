@@ -1,0 +1,234 @@
+name: Release ezd2step Bundles
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: "Release tag to build, for example v1.0.1"
+        required: true
+        type: string
+      upload_to_release:
+        description: "Upload generated assets to the GitHub release for tag_name"
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-ezd2step-${{ github.event.release.tag_name || inputs.tag_name }}
+  cancel-in-progress: false
+
+env:
+  RELEASE_TAG: ${{ github.event.release.tag_name || inputs.tag_name }}
+
+jobs:
+  build-macos-arm64:
+    name: Build macOS arm64 bundle
+    runs-on: macos-15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+
+      - name: Set release version
+        shell: bash
+        run: echo "EZD2STEP_VERSION=${RELEASE_TAG#v}" >> "$GITHUB_ENV"
+
+      - name: Validate project version
+        shell: bash
+        run: |
+          cmake_version=$(sed -nE 's/^project\(ezd2step VERSION ([0-9.]+)\).*/\1/p' tools/ezd2step/CMakeLists.txt)
+          if [ "$cmake_version" != "$EZD2STEP_VERSION" ]; then
+            echo "Release tag version ($EZD2STEP_VERSION) does not match CMake project version ($cmake_version)"
+            exit 1
+          fi
+
+      - name: Set up vcpkg
+        shell: bash
+        run: |
+          git clone https://github.com/microsoft/vcpkg.git ./vcpkg
+          ./vcpkg/bootstrap-vcpkg.sh
+
+      - name: Configure ezd2step
+        shell: bash
+        run: |
+          cmake -B build \
+            -DCMAKE_TOOLCHAIN_FILE=./vcpkg/scripts/buildsystems/vcpkg.cmake \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_LIBRARY_TYPE=Shared \
+            -DBUILD_MINIMAL_DISTRIBUTION=ON \
+            -DBUILD_MINIMAL_PROFILE=step-export-minimal \
+            -DUSE_TCL=OFF \
+            -DUSE_TK=OFF \
+            -DBUILD_MODULE_Draw=OFF \
+            -DUSE_FREETYPE=OFF
+
+      - name: Build ezd2step
+        shell: bash
+        run: cmake --build build --config Release --target ezd2step -j"$(sysctl -n hw.logicalcpu)"
+
+      - name: Package bundle
+        shell: bash
+        run: cmake --build build --config Release --target package_ezd2step_bundle
+
+      - name: Smoke test bundle
+        shell: bash
+        run: |
+          tools/ezd2step/test_bundle.sh \
+            "build/bundles/ezd2step-${EZD2STEP_VERSION}-macos-arm64.tar.gz" \
+            "$RUNNER_TEMP/ezd2step-bundle-test" \
+            "$GITHUB_WORKSPACE/tools/ezd2step/20260427.ezd"
+
+      - name: Upload macOS bundle artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ezd2step-macos-arm64
+          path: build/bundles/ezd2step-*-macos-arm64.tar.gz
+          if-no-files-found: error
+
+  build-windows-x64:
+    name: Build Windows x64 bundle
+    runs-on: windows-2022
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+
+      - name: Set release version
+        shell: pwsh
+        run: |
+          $version = "${env:RELEASE_TAG}" -replace '^v', ''
+          "EZD2STEP_VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      - name: Validate project version
+        shell: pwsh
+        run: |
+          $cmake = Get-Content tools/ezd2step/CMakeLists.txt | Select-String -Pattern '^project\(ezd2step VERSION ([0-9.]+)\)'
+          $cmakeVersion = $cmake.Matches[0].Groups[1].Value
+          $releaseVersion = "${env:RELEASE_TAG}" -replace '^v', ''
+          if ($cmakeVersion -ne $releaseVersion) {
+            Write-Error "Release tag version ($releaseVersion) does not match CMake project version ($cmakeVersion)"
+            exit 1
+          }
+
+      - name: Set up MSVC
+        uses: ilammy/msvc-dev-cmd@v1.13.0
+        with:
+          arch: x64
+
+      - name: Set up vcpkg
+        shell: cmd
+        run: |
+          git clone https://github.com/microsoft/vcpkg.git .\vcpkg
+          .\vcpkg\bootstrap-vcpkg.bat
+
+      - name: Configure ezd2step
+        shell: cmd
+        run: |
+          cmake -B build ^
+            -DCMAKE_TOOLCHAIN_FILE=%CD%\vcpkg\scripts\buildsystems\vcpkg.cmake ^
+            -DCMAKE_BUILD_TYPE=Release ^
+            -DBUILD_LIBRARY_TYPE=Shared ^
+            -DBUILD_MINIMAL_DISTRIBUTION=ON ^
+            -DBUILD_MINIMAL_PROFILE=step-export-minimal ^
+            -DUSE_TCL=OFF ^
+            -DUSE_TK=OFF ^
+            -DBUILD_MODULE_Draw=OFF ^
+            -DUSE_FREETYPE=OFF
+
+      - name: Build ezd2step
+        shell: cmd
+        run: cmake --build build --config Release --target ezd2step --parallel
+
+      - name: Package bundle
+        shell: cmd
+        run: cmake --build build --config Release --target package_ezd2step_bundle
+
+      - name: Smoke test bundle
+        shell: pwsh
+        run: |
+          ./tools/ezd2step/test_bundle.ps1 `
+            -BundleArchive "build/bundles/ezd2step-${env:EZD2STEP_VERSION}-windows-x64.zip" `
+            -TestDirectory "${env:RUNNER_TEMP}\ezd2step-bundle-test" `
+            -SampleEzd "${env:GITHUB_WORKSPACE}\tools\ezd2step\20260427.ezd"
+
+      - name: Upload Windows bundle artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ezd2step-windows-x64
+          path: build/bundles/ezd2step-*-windows-x64.zip
+          if-no-files-found: error
+
+  publish-assets:
+    name: Publish release assets
+    runs-on: ubuntu-24.04
+    needs:
+      - build-macos-arm64
+      - build-windows-x64
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+
+      - name: Set release version
+        shell: bash
+        run: echo "EZD2STEP_VERSION=${RELEASE_TAG#v}" >> "$GITHUB_ENV"
+
+      - name: Validate project version
+        shell: bash
+        run: |
+          cmake_version=$(sed -nE 's/^project\(ezd2step VERSION ([0-9.]+)\).*/\1/p' tools/ezd2step/CMakeLists.txt)
+          if [ "$cmake_version" != "$EZD2STEP_VERSION" ]; then
+            echo "Release tag version ($EZD2STEP_VERSION) does not match CMake project version ($cmake_version)"
+            exit 1
+          fi
+
+      - name: Download bundle artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: build/bundles
+          merge-multiple: true
+
+      - name: Create source package
+        shell: bash
+        run: |
+          mkdir -p build/bundles
+          tools/ezd2step/create_source_package.sh "$EZD2STEP_VERSION"
+
+      - name: Generate checksums
+        shell: bash
+        run: tools/ezd2step/create_checksums.sh build/bundles
+
+      - name: Upload combined release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ezd2step-release-assets
+          path: |
+            build/bundles/ezd2step-*-macos-arm64.tar.gz
+            build/bundles/ezd2step-*-windows-x64.zip
+            build/bundles/ezd2step-*-source.tar.gz
+            build/bundles/SHA256SUMS
+          if-no-files-found: error
+
+      - name: Upload assets to GitHub Release
+        if: github.event_name == 'release' || inputs.upload_to_release == true
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload "$RELEASE_TAG" \
+            "build/bundles/ezd2step-${EZD2STEP_VERSION}-macos-arm64.tar.gz" \
+            "build/bundles/ezd2step-${EZD2STEP_VERSION}-windows-x64.zip" \
+            "build/bundles/ezd2step-${EZD2STEP_VERSION}-source.tar.gz" \
+            "build/bundles/SHA256SUMS" \
+            --clobber
