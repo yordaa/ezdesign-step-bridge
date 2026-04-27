@@ -1,0 +1,1128 @@
+{
+  "metadata": {
+    "name": "EzDesign Document",
+    "version": "0.1.7",
+    "timestamp": 1777284260418
+  },
+  "data": {
+    "db": {
+      "body_ids": [
+        93
+      ],
+      "entities": {
+        "75": {
+          "data": {
+            "half_edge_id": 107,
+            "position": [
+              1.2692946204162798,
+              -4.69643886659667,
+              -2.1576694436723856e-17
+            ]
+          },
+          "id": 75,
+          "type": "Vertex"
+        },
+        "76": {
+          "data": {
+            "half_edge_id": 81,
+            "position": [
+              1.2692946204162798,
+              -4.69643886659667,
+              2.3321470326027987
+            ]
+          },
+          "id": 76,
+          "type": "Vertex"
+        },
+        "77": {
+          "data": {
+            "half_edge_id": 84,
+            "position": [
+              0.7563831946464106,
+              -6.289585394593978,
+              2.3321470326027987
+            ]
+          },
+          "id": 77,
+          "type": "Vertex"
+        },
+        "78": {
+          "data": {
+            "half_edge_id": 87,
+            "position": [
+              0.7563831946464106,
+              -6.289585394593978,
+              -2.1576694436723856e-17
+            ]
+          },
+          "id": 78,
+          "type": "Vertex"
+        },
+        "79": {
+          "data": {
+            "half_edge_id": 107
+          },
+          "id": 79,
+          "type": "Edge"
+        },
+        "81": {
+          "data": {
+            "curve_data": {
+              "basis": {
+                "bounds": {
+                  "maximum": 1,
+                  "minimum": 0
+                },
+                "degree": 1,
+                "knot_vector": [
+                  0,
+                  0,
+                  1,
+                  1
+                ]
+              },
+              "control_points": {
+                "data": [
+                  3,
+                  3,
+                  4,
+                  3
+                ],
+                "dimension": 2,
+                "is_rational": false,
+                "number_u_points": 1,
+                "number_v_points": 2
+              }
+            },
+            "edge_id": 79,
+            "loop_id": 92,
+            "next_id": 84,
+            "opposite_id": 107,
+            "previous_id": 90,
+            "vertex_id": 76
+          },
+          "id": 81,
+          "type": "HalfEdge"
+        },
+        "82": {
+          "data": {
+            "half_edge_id": 83
+          },
+          "id": 82,
+          "type": "Edge"
+        },
+        "83": {
+          "data": {
+            "edge_id": 82,
+            "loop_id": 0,
+            "next_id": 103,
+            "opposite_id": 84,
+            "previous_id": 86,
+            "vertex_id": 76
+          },
+          "id": 83,
+          "type": "HalfEdge"
+        },
+        "84": {
+          "data": {
+            "curve_data": {
+              "basis": {
+                "bounds": {
+                  "maximum": 1,
+                  "minimum": 0
+                },
+                "degree": 1,
+                "knot_vector": [
+                  0,
+                  0,
+                  1,
+                  1
+                ]
+              },
+              "control_points": {
+                "data": [
+                  4,
+                  3,
+                  4,
+                  4
+                ],
+                "dimension": 2,
+                "is_rational": false,
+                "number_u_points": 1,
+                "number_v_points": 2
+              }
+            },
+            "edge_id": 82,
+            "loop_id": 92,
+            "next_id": 87,
+            "opposite_id": 83,
+            "previous_id": 81,
+            "vertex_id": 77
+          },
+          "id": 84,
+          "type": "HalfEdge"
+        },
+        "85": {
+          "data": {
+            "half_edge_id": 86
+          },
+          "id": 85,
+          "type": "Edge"
+        },
+        "86": {
+          "data": {
+            "edge_id": 85,
+            "loop_id": 0,
+            "next_id": 83,
+            "opposite_id": 87,
+            "previous_id": 89,
+            "vertex_id": 77
+          },
+          "id": 86,
+          "type": "HalfEdge"
+        },
+        "87": {
+          "data": {
+            "curve_data": {
+              "basis": {
+                "bounds": {
+                  "maximum": 1,
+                  "minimum": 0
+                },
+                "degree": 1,
+                "knot_vector": [
+                  0,
+                  0,
+                  1,
+                  1
+                ]
+              },
+              "control_points": {
+                "data": [
+                  4,
+                  4,
+                  3,
+                  4
+                ],
+                "dimension": 2,
+                "is_rational": false,
+                "number_u_points": 1,
+                "number_v_points": 2
+              }
+            },
+            "edge_id": 85,
+            "loop_id": 92,
+            "next_id": 90,
+            "opposite_id": 86,
+            "previous_id": 84,
+            "vertex_id": 78
+          },
+          "id": 87,
+          "type": "HalfEdge"
+        },
+        "88": {
+          "data": {
+            "half_edge_id": 89
+          },
+          "id": 88,
+          "type": "Edge"
+        },
+        "89": {
+          "data": {
+            "edge_id": 88,
+            "loop_id": 0,
+            "next_id": 86,
+            "opposite_id": 90,
+            "previous_id": 109,
+            "vertex_id": 78
+          },
+          "id": 89,
+          "type": "HalfEdge"
+        },
+        "90": {
+          "data": {
+            "curve_data": {
+              "basis": {
+                "bounds": {
+                  "maximum": 1,
+                  "minimum": 0
+                },
+                "degree": 1,
+                "knot_vector": [
+                  0,
+                  0,
+                  1,
+                  1
+                ]
+              },
+              "control_points": {
+                "data": [
+                  3,
+                  4,
+                  3,
+                  3
+                ],
+                "dimension": 2,
+                "is_rational": false,
+                "number_u_points": 1,
+                "number_v_points": 2
+              }
+            },
+            "edge_id": 88,
+            "loop_id": 92,
+            "next_id": 81,
+            "opposite_id": 89,
+            "previous_id": 87,
+            "vertex_id": 75
+          },
+          "id": 90,
+          "type": "HalfEdge"
+        },
+        "91": {
+          "data": {
+            "is_surface_normal_same": 1,
+            "loop_ids": [
+              92
+            ],
+            "shell_id": 94,
+            "surface_data": {
+              "control_points": {
+                "data": [
+                  2.3739303305555737,
+                  -3.8178374951857634,
+                  -2.3321470326027987,
+                  2.3739303305555737,
+                  -3.8178374951857634,
+                  0,
+                  2.3739303305555737,
+                  -3.8178374951857634,
+                  2.3321470326027987,
+                  2.3739303305555737,
+                  -3.8178374951857634,
+                  4.664294065205597,
+                  1.1213635493239238,
+                  -4.51780257745007,
+                  -2.3321470326027987,
+                  1.1213635493239238,
+                  -4.51780257745007,
+                  0,
+                  1.1213635493239238,
+                  -4.51780257745007,
+                  2.3321470326027987,
+                  1.1213635493239238,
+                  -4.51780257745007,
+                  4.664294065205597,
+                  0.7563831946464106,
+                  -6.289585394593978,
+                  -2.3321470326027987,
+                  0.7563831946464106,
+                  -6.289585394593978,
+                  0,
+                  0.7563831946464106,
+                  -6.289585394593978,
+                  2.3321470326027987,
+                  0.7563831946464106,
+                  -6.289585394593978,
+                  4.664294065205597,
+                  0.39140283996889735,
+                  -8.061368211737886,
+                  -2.3321470326027987,
+                  0.39140283996889735,
+                  -8.061368211737886,
+                  0,
+                  0.39140283996889735,
+                  -8.061368211737886,
+                  2.3321470326027987,
+                  0.39140283996889735,
+                  -8.061368211737886,
+                  4.664294065205597
+                ],
+                "dimension": 3,
+                "is_rational": false,
+                "number_u_points": 4,
+                "number_v_points": 4
+              },
+              "is_normal_outward": true,
+              "trimming_loop": {
+                "curves": []
+              },
+              "u_basis": {
+                "bounds": {
+                  "maximum": 4,
+                  "minimum": 3
+                },
+                "degree": 3,
+                "knot_vector": [
+                  0,
+                  1,
+                  2,
+                  3,
+                  4,
+                  5,
+                  6,
+                  7
+                ]
+              },
+              "v_basis": {
+                "bounds": {
+                  "maximum": 4,
+                  "minimum": 3
+                },
+                "degree": 3,
+                "knot_vector": [
+                  0,
+                  1,
+                  2,
+                  3,
+                  4,
+                  5,
+                  6,
+                  7
+                ]
+              }
+            }
+          },
+          "id": 91,
+          "type": "Face"
+        },
+        "92": {
+          "data": {
+            "half_edge_id": 81,
+            "owner_id": 91,
+            "owner_kind": "Face"
+          },
+          "id": 92,
+          "type": "Loop"
+        },
+        "93": {
+          "data": {
+            "shell_ids": [
+              94
+            ]
+          },
+          "id": 93,
+          "type": "Body"
+        },
+        "94": {
+          "data": {
+            "body_id": 93,
+            "face_ids": [
+              91,
+              111,
+              131
+            ]
+          },
+          "id": 94,
+          "type": "Shell"
+        },
+        "95": {
+          "data": {
+            "half_edge_id": 127,
+            "position": [
+              2.342032776120498,
+              -4.036838906141811,
+              -2.1576694436723856e-17
+            ]
+          },
+          "id": 95,
+          "type": "Vertex"
+        },
+        "96": {
+          "data": {
+            "half_edge_id": 101,
+            "position": [
+              2.342032776120498,
+              -4.036838906141811,
+              2.3321470326027987
+            ]
+          },
+          "id": 96,
+          "type": "Vertex"
+        },
+        "99": {
+          "data": {
+            "half_edge_id": 127
+          },
+          "id": 99,
+          "type": "Edge"
+        },
+        "101": {
+          "data": {
+            "curve_data": {
+              "basis": {
+                "bounds": {
+                  "maximum": 1,
+                  "minimum": 0
+                },
+                "degree": 1,
+                "knot_vector": [
+                  0,
+                  0,
+                  1,
+                  1
+                ]
+              },
+              "control_points": {
+                "data": [
+                  3,
+                  3,
+                  4,
+                  3
+                ],
+                "dimension": 2,
+                "is_rational": false,
+                "number_u_points": 1,
+                "number_v_points": 2
+              }
+            },
+            "edge_id": 99,
+            "loop_id": 112,
+            "next_id": 104,
+            "opposite_id": 127,
+            "previous_id": 110,
+            "vertex_id": 96
+          },
+          "id": 101,
+          "type": "HalfEdge"
+        },
+        "102": {
+          "data": {
+            "half_edge_id": 103
+          },
+          "id": 102,
+          "type": "Edge"
+        },
+        "103": {
+          "data": {
+            "edge_id": 102,
+            "loop_id": 0,
+            "next_id": 123,
+            "opposite_id": 104,
+            "previous_id": 83,
+            "vertex_id": 96
+          },
+          "id": 103,
+          "type": "HalfEdge"
+        },
+        "104": {
+          "data": {
+            "curve_data": {
+              "basis": {
+                "bounds": {
+                  "maximum": 1,
+                  "minimum": 0
+                },
+                "degree": 1,
+                "knot_vector": [
+                  0,
+                  0,
+                  1,
+                  1
+                ]
+              },
+              "control_points": {
+                "data": [
+                  4,
+                  3,
+                  4,
+                  4
+                ],
+                "dimension": 2,
+                "is_rational": false,
+                "number_u_points": 1,
+                "number_v_points": 2
+              }
+            },
+            "edge_id": 102,
+            "loop_id": 112,
+            "next_id": 107,
+            "opposite_id": 103,
+            "previous_id": 101,
+            "vertex_id": 76
+          },
+          "id": 104,
+          "type": "HalfEdge"
+        },
+        "107": {
+          "data": {
+            "curve_data": {
+              "basis": {
+                "bounds": {
+                  "maximum": 1,
+                  "minimum": 0
+                },
+                "degree": 1,
+                "knot_vector": [
+                  0,
+                  0,
+                  1,
+                  1
+                ]
+              },
+              "control_points": {
+                "data": [
+                  4,
+                  4,
+                  3,
+                  4
+                ],
+                "dimension": 2,
+                "is_rational": false,
+                "number_u_points": 1,
+                "number_v_points": 2
+              }
+            },
+            "edge_id": 79,
+            "loop_id": 112,
+            "next_id": 110,
+            "opposite_id": 81,
+            "previous_id": 104,
+            "vertex_id": 75
+          },
+          "id": 107,
+          "type": "HalfEdge"
+        },
+        "108": {
+          "data": {
+            "half_edge_id": 109
+          },
+          "id": 108,
+          "type": "Edge"
+        },
+        "109": {
+          "data": {
+            "edge_id": 108,
+            "loop_id": 0,
+            "next_id": 89,
+            "opposite_id": 110,
+            "previous_id": 129,
+            "vertex_id": 75
+          },
+          "id": 109,
+          "type": "HalfEdge"
+        },
+        "110": {
+          "data": {
+            "curve_data": {
+              "basis": {
+                "bounds": {
+                  "maximum": 1,
+                  "minimum": 0
+                },
+                "degree": 1,
+                "knot_vector": [
+                  0,
+                  0,
+                  1,
+                  1
+                ]
+              },
+              "control_points": {
+                "data": [
+                  3,
+                  4,
+                  3,
+                  3
+                ],
+                "dimension": 2,
+                "is_rational": false,
+                "number_u_points": 1,
+                "number_v_points": 2
+              }
+            },
+            "edge_id": 108,
+            "loop_id": 112,
+            "next_id": 101,
+            "opposite_id": 109,
+            "previous_id": 107,
+            "vertex_id": 95
+          },
+          "id": 110,
+          "type": "HalfEdge"
+        },
+        "111": {
+          "data": {
+            "is_surface_normal_same": 1,
+            "loop_ids": [
+              112
+            ],
+            "shell_id": 94,
+            "surface_data": {
+              "control_points": {
+                "data": [
+                  3.4351117851767725,
+                  -4.4318808786577435,
+                  -2.3321470326027987,
+                  3.4351117851767725,
+                  -4.4318808786577435,
+                  0,
+                  3.4351117851767725,
+                  -4.4318808786577435,
+                  2.3321470326027987,
+                  3.4351117851767725,
+                  -4.4318808786577435,
+                  4.664294065205597,
+                  2.3739303305555737,
+                  -3.8178374951857634,
+                  -2.3321470326027987,
+                  2.3739303305555737,
+                  -3.8178374951857634,
+                  0,
+                  2.3739303305555737,
+                  -3.8178374951857634,
+                  2.3321470326027987,
+                  2.3739303305555737,
+                  -3.8178374951857634,
+                  4.664294065205597,
+                  1.1213635493239238,
+                  -4.51780257745007,
+                  -2.3321470326027987,
+                  1.1213635493239238,
+                  -4.51780257745007,
+                  0,
+                  1.1213635493239238,
+                  -4.51780257745007,
+                  2.3321470326027987,
+                  1.1213635493239238,
+                  -4.51780257745007,
+                  4.664294065205597,
+                  0.7563831946464106,
+                  -6.289585394593978,
+                  -2.3321470326027987,
+                  0.7563831946464106,
+                  -6.289585394593978,
+                  0,
+                  0.7563831946464106,
+                  -6.289585394593978,
+                  2.3321470326027987,
+                  0.7563831946464106,
+                  -6.289585394593978,
+                  4.664294065205597
+                ],
+                "dimension": 3,
+                "is_rational": false,
+                "number_u_points": 4,
+                "number_v_points": 4
+              },
+              "is_normal_outward": true,
+              "trimming_loop": {
+                "curves": []
+              },
+              "u_basis": {
+                "bounds": {
+                  "maximum": 4,
+                  "minimum": 3
+                },
+                "degree": 3,
+                "knot_vector": [
+                  0,
+                  1,
+                  2,
+                  3,
+                  4,
+                  5,
+                  6,
+                  7
+                ]
+              },
+              "v_basis": {
+                "bounds": {
+                  "maximum": 4,
+                  "minimum": 3
+                },
+                "degree": 3,
+                "knot_vector": [
+                  0,
+                  1,
+                  2,
+                  3,
+                  4,
+                  5,
+                  6,
+                  7
+                ]
+              }
+            }
+          },
+          "id": 111,
+          "type": "Face"
+        },
+        "112": {
+          "data": {
+            "half_edge_id": 101,
+            "owner_id": 111,
+            "owner_kind": "Face"
+          },
+          "id": 112,
+          "type": "Loop"
+        },
+        "115": {
+          "data": {
+            "half_edge_id": 120,
+            "position": [
+              3.435111785176772,
+              -4.431880878657743,
+              -2.1576694436723856e-17
+            ]
+          },
+          "id": 115,
+          "type": "Vertex"
+        },
+        "116": {
+          "data": {
+            "half_edge_id": 121,
+            "position": [
+              3.435111785176772,
+              -4.431880878657743,
+              2.3321470326027987
+            ]
+          },
+          "id": 116,
+          "type": "Vertex"
+        },
+        "119": {
+          "data": {
+            "half_edge_id": 120
+          },
+          "id": 119,
+          "type": "Edge"
+        },
+        "120": {
+          "data": {
+            "edge_id": 119,
+            "loop_id": 0,
+            "next_id": 129,
+            "opposite_id": 121,
+            "previous_id": 123,
+            "vertex_id": 115
+          },
+          "id": 120,
+          "type": "HalfEdge"
+        },
+        "121": {
+          "data": {
+            "curve_data": {
+              "basis": {
+                "bounds": {
+                  "maximum": 1,
+                  "minimum": 0
+                },
+                "degree": 1,
+                "knot_vector": [
+                  0,
+                  0,
+                  1,
+                  1
+                ]
+              },
+              "control_points": {
+                "data": [
+                  3,
+                  3,
+                  4,
+                  3
+                ],
+                "dimension": 2,
+                "is_rational": false,
+                "number_u_points": 1,
+                "number_v_points": 2
+              }
+            },
+            "edge_id": 119,
+            "loop_id": 132,
+            "next_id": 124,
+            "opposite_id": 120,
+            "previous_id": 130,
+            "vertex_id": 116
+          },
+          "id": 121,
+          "type": "HalfEdge"
+        },
+        "122": {
+          "data": {
+            "half_edge_id": 123
+          },
+          "id": 122,
+          "type": "Edge"
+        },
+        "123": {
+          "data": {
+            "edge_id": 122,
+            "loop_id": 0,
+            "next_id": 120,
+            "opposite_id": 124,
+            "previous_id": 103,
+            "vertex_id": 116
+          },
+          "id": 123,
+          "type": "HalfEdge"
+        },
+        "124": {
+          "data": {
+            "curve_data": {
+              "basis": {
+                "bounds": {
+                  "maximum": 1,
+                  "minimum": 0
+                },
+                "degree": 1,
+                "knot_vector": [
+                  0,
+                  0,
+                  1,
+                  1
+                ]
+              },
+              "control_points": {
+                "data": [
+                  4,
+                  3,
+                  4,
+                  4
+                ],
+                "dimension": 2,
+                "is_rational": false,
+                "number_u_points": 1,
+                "number_v_points": 2
+              }
+            },
+            "edge_id": 122,
+            "loop_id": 132,
+            "next_id": 127,
+            "opposite_id": 123,
+            "previous_id": 121,
+            "vertex_id": 96
+          },
+          "id": 124,
+          "type": "HalfEdge"
+        },
+        "127": {
+          "data": {
+            "curve_data": {
+              "basis": {
+                "bounds": {
+                  "maximum": 1,
+                  "minimum": 0
+                },
+                "degree": 1,
+                "knot_vector": [
+                  0,
+                  0,
+                  1,
+                  1
+                ]
+              },
+              "control_points": {
+                "data": [
+                  4,
+                  4,
+                  3,
+                  4
+                ],
+                "dimension": 2,
+                "is_rational": false,
+                "number_u_points": 1,
+                "number_v_points": 2
+              }
+            },
+            "edge_id": 99,
+            "loop_id": 132,
+            "next_id": 130,
+            "opposite_id": 101,
+            "previous_id": 124,
+            "vertex_id": 95
+          },
+          "id": 127,
+          "type": "HalfEdge"
+        },
+        "128": {
+          "data": {
+            "half_edge_id": 129
+          },
+          "id": 128,
+          "type": "Edge"
+        },
+        "129": {
+          "data": {
+            "edge_id": 128,
+            "loop_id": 0,
+            "next_id": 109,
+            "opposite_id": 130,
+            "previous_id": 120,
+            "vertex_id": 95
+          },
+          "id": 129,
+          "type": "HalfEdge"
+        },
+        "130": {
+          "data": {
+            "curve_data": {
+              "basis": {
+                "bounds": {
+                  "maximum": 1,
+                  "minimum": 0
+                },
+                "degree": 1,
+                "knot_vector": [
+                  0,
+                  0,
+                  1,
+                  1
+                ]
+              },
+              "control_points": {
+                "data": [
+                  3,
+                  4,
+                  3,
+                  3
+                ],
+                "dimension": 2,
+                "is_rational": false,
+                "number_u_points": 1,
+                "number_v_points": 2
+              }
+            },
+            "edge_id": 128,
+            "loop_id": 132,
+            "next_id": 121,
+            "opposite_id": 129,
+            "previous_id": 127,
+            "vertex_id": 115
+          },
+          "id": 130,
+          "type": "HalfEdge"
+        },
+        "131": {
+          "data": {
+            "is_surface_normal_same": 1,
+            "loop_ids": [
+              132
+            ],
+            "shell_id": 94,
+            "surface_data": {
+              "control_points": {
+                "data": [
+                  4.496293239797971,
+                  -5.045924262129724,
+                  -2.3321470326027987,
+                  4.496293239797971,
+                  -5.045924262129724,
+                  0,
+                  4.496293239797971,
+                  -5.045924262129724,
+                  2.3321470326027987,
+                  4.496293239797971,
+                  -5.045924262129724,
+                  4.664294065205597,
+                  3.4351117851767725,
+                  -4.4318808786577435,
+                  -2.3321470326027987,
+                  3.4351117851767725,
+                  -4.4318808786577435,
+                  0,
+                  3.4351117851767725,
+                  -4.4318808786577435,
+                  2.3321470326027987,
+                  3.4351117851767725,
+                  -4.4318808786577435,
+                  4.664294065205597,
+                  2.3739303305555737,
+                  -3.8178374951857634,
+                  -2.3321470326027987,
+                  2.3739303305555737,
+                  -3.8178374951857634,
+                  0,
+                  2.3739303305555737,
+                  -3.8178374951857634,
+                  2.3321470326027987,
+                  2.3739303305555737,
+                  -3.8178374951857634,
+                  4.664294065205597,
+                  1.1213635493239238,
+                  -4.51780257745007,
+                  -2.3321470326027987,
+                  1.1213635493239238,
+                  -4.51780257745007,
+                  0,
+                  1.1213635493239238,
+                  -4.51780257745007,
+                  2.3321470326027987,
+                  1.1213635493239238,
+                  -4.51780257745007,
+                  4.664294065205597
+                ],
+                "dimension": 3,
+                "is_rational": false,
+                "number_u_points": 4,
+                "number_v_points": 4
+              },
+              "is_normal_outward": true,
+              "trimming_loop": {
+                "curves": []
+              },
+              "u_basis": {
+                "bounds": {
+                  "maximum": 4,
+                  "minimum": 3
+                },
+                "degree": 3,
+                "knot_vector": [
+                  0,
+                  1,
+                  2,
+                  3,
+                  4,
+                  5,
+                  6,
+                  7
+                ]
+              },
+              "v_basis": {
+                "bounds": {
+                  "maximum": 4,
+                  "minimum": 3
+                },
+                "degree": 3,
+                "knot_vector": [
+                  0,
+                  1,
+                  2,
+                  3,
+                  4,
+                  5,
+                  6,
+                  7
+                ]
+              }
+            }
+          },
+          "id": 131,
+          "type": "Face"
+        },
+        "132": {
+          "data": {
+            "half_edge_id": 121,
+            "owner_id": 131,
+            "owner_kind": "Face"
+          },
+          "id": 132,
+          "type": "Loop"
+        }
+      },
+      "empties": [],
+      "meshes": []
+    },
+    "flow": {
+      "nodes": [],
+      "edges": []
+    },
+    "nodes": [
+      {
+        "id": 93,
+        "visible": true,
+        "selectable": true
+      }
+    ]
+  }
+}

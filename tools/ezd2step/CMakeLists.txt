@@ -3,6 +3,35 @@ project(ezd2step VERSION 1.0.1)
 # Find nlohmann/json (uses vcpkg manifest mode when vcpkg toolchain is used)
 find_package(nlohmann_json REQUIRED)
 
+set(EZD2STEP_CONVERTER_SOURCES
+  ezd_to_step.cxx
+  EzDesignJsonReader.cxx
+  EzDesignToOCCTConverter.cxx
+)
+
+set(EZD2STEP_OCCT_LIBS
+  TKDESTEP
+  TKXSBase
+  TKDE
+  TKBRep
+  TKTopAlgo
+  TKGeomAlgo
+  TKGeomBase
+  TKG3d
+  TKG2d
+  TKMath
+  TKernel
+  TKCDF
+)
+
+function(ezd2step_enable_cxx17 target_name)
+  set_target_properties(${target_name} PROPERTIES
+    CXX_STANDARD 17
+    CXX_STANDARD_REQUIRED ON
+  )
+  target_compile_features(${target_name} PRIVATE cxx_std_17)
+endfunction()
+
 # Include OCCT build system
 OCCT_INCLUDE_CMAKE_FILE (adm/cmake/occt_toolkit_prepare_tool)
 set (EXECUTABLE_PROJECT ON)
@@ -58,9 +87,7 @@ endif()
 # C API Shared Library
 # Create shared library for C API (libezd2step.dylib on macOS, ezd2step.dll on Windows)
 add_library(ezd2step_capi SHARED
-  ezd_to_step.cxx
-  EzDesignJsonReader.cxx
-  EzDesignToOCCTConverter.cxx
+  ${EZD2STEP_CONVERTER_SOURCES}
 )
 
 # Set library name
@@ -69,6 +96,7 @@ set_target_properties(ezd2step_capi PROPERTIES
   VERSION ${PROJECT_VERSION}
   SOVERSION ${PROJECT_VERSION_MAJOR}
 )
+ezd2step_enable_cxx17(ezd2step_capi)
 
 # Link against nlohmann/json
 target_link_libraries(ezd2step_capi PRIVATE nlohmann_json::nlohmann_json)
@@ -76,18 +104,7 @@ target_link_libraries(ezd2step_capi PRIVATE nlohmann_json::nlohmann_json)
 # Link against OCCT libraries (same as executable)
 # Link against OCCT library targets
 target_link_libraries(ezd2step_capi PRIVATE
-  TKDESTEP
-  TKXSBase
-  TKDE
-  TKBRep
-  TKTopAlgo
-  TKGeomAlgo
-  TKGeomBase
-  TKG3d
-  TKG2d
-  TKMath
-  TKernel
-  TKCDF
+  ${EZD2STEP_OCCT_LIBS}
 )
 
 # Configure rpath for shared library (same as executable)
@@ -171,5 +188,30 @@ target_link_libraries(test_basic_models PRIVATE
   ${CMAKE_BINARY_DIR}/mac64/clang/lib/libTKMath.dylib
   ${CMAKE_BINARY_DIR}/mac64/clang/lib/libTKernel.dylib
   ${CMAKE_BINARY_DIR}/mac64/clang/lib/libTKCDF.dylib
+)
+
+add_executable(test_20260427_conversion
+  test_20260427_conversion.cxx
+  ${EZD2STEP_CONVERTER_SOURCES}
+)
+ezd2step_enable_cxx17(test_20260427_conversion)
+target_link_libraries(test_20260427_conversion PRIVATE
+  nlohmann_json::nlohmann_json
+  ${EZD2STEP_OCCT_LIBS}
+)
+add_custom_command(TARGET test_20260427_conversion POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy_if_different
+          ${CMAKE_CURRENT_SOURCE_DIR}/20260427.ezd
+          $<TARGET_FILE_DIR:test_20260427_conversion>/20260427.ezd
+)
+
+add_executable(test_json_reader_entities_schema
+  test_json_reader_entities_schema.cxx
+  EzDesignJsonReader.cxx
+)
+ezd2step_enable_cxx17(test_json_reader_entities_schema)
+target_link_libraries(test_json_reader_entities_schema PRIVATE
+  nlohmann_json::nlohmann_json
+  TKernel
 )
 
