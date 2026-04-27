@@ -1,6 +1,8 @@
 # Portfile for ezd2step - EZDesign to STEP converter
 # Downloads pre-built bundle from GitHub Releases
 
+set(VCPKG_POLICY_EMPTY_INCLUDE_FOLDER enabled)
+
 # Detect platform using vcpkg variables (not APPLE/WIN32 which don't work in script mode)
 if(VCPKG_TARGET_IS_OSX AND VCPKG_TARGET_ARCHITECTURE STREQUAL "arm64")
     set(PLATFORM "macos-arm64")
@@ -81,5 +83,12 @@ file(ARCHIVE_EXTRACT
 
 file(COPY "${CURRENT_BUILDTREES_DIR}/src/ezd2step-${VERSION}-${PLATFORM}/"
      DESTINATION "${CURRENT_PACKAGES_DIR}/tools/ezd2step" FILES_MATCHING PATTERN "*")
+
+file(MAKE_DIRECTORY "${CURRENT_PACKAGES_DIR}/share/${PORT}")
+configure_file(
+    "${CURRENT_BUILDTREES_DIR}/src/ezd2step-${VERSION}-${PLATFORM}/LICENSE.txt"
+    "${CURRENT_PACKAGES_DIR}/share/${PORT}/copyright"
+    COPYONLY
+)
 
 file(REMOVE_RECURSE "${EXTRACT_DIR}")
