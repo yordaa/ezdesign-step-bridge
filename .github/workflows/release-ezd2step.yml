@@ -1,8 +1,9 @@
 name: Release ezd2step Bundles
 
 on:
-  release:
-    types: [published]
+  push:
+    tags:
+      - "v*"
   workflow_dispatch:
     inputs:
       tag_name:
@@ -23,12 +24,12 @@ permissions:
   contents: write
 
 concurrency:
-  group: release-ezd2step-${{ github.event.release.tag_name || inputs.tag_name }}
+  group: release-ezd2step-${{ github.event_name == 'workflow_dispatch' && inputs.tag_name || github.ref_name }}
   cancel-in-progress: false
 
 env:
-  RELEASE_TAG: ${{ github.event.release.tag_name || inputs.tag_name }}
-  CHECKOUT_REF: ${{ inputs.checkout_ref || github.event.release.tag_name || inputs.tag_name }}
+  RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag_name || github.ref_name }}
+  CHECKOUT_REF: ${{ github.event_name == 'workflow_dispatch' && (inputs.checkout_ref || inputs.tag_name) || github.ref_name }}
 
 jobs:
   build-macos-arm64:
@@ -225,15 +226,24 @@ jobs:
             build/bundles/SHA256SUMS
           if-no-files-found: error
 
-      - name: Upload assets to GitHub Release
-        if: github.event_name == 'release' || inputs.upload_to_release == true
+      - name: Publish assets to GitHub Release
+        if: github.event_name == 'push' || inputs.upload_to_release == true
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload "$RELEASE_TAG" \
-            "build/bundles/ezd2step-${EZD2STEP_VERSION}-macos-arm64.tar.gz" \
-            "build/bundles/ezd2step-${EZD2STEP_VERSION}-windows-x64.zip" \
-            "build/bundles/ezd2step-${EZD2STEP_VERSION}-source.tar.gz" \
-            "build/bundles/SHA256SUMS" \
-            --clobber
+          assets=(
+            "build/bundles/ezd2step-${EZD2STEP_VERSION}-macos-arm64.tar.gz"
+            "build/bundles/ezd2step-${EZD2STEP_VERSION}-windows-x64.zip"
+            "build/bundles/ezd2step-${EZD2STEP_VERSION}-source.tar.gz"
+            "build/bundles/SHA256SUMS"
+          )
+
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" "${assets[@]}" --clobber
+          else
+            gh release create "$RELEASE_TAG" \
+              --title "ezd2step ${EZD2STEP_VERSION}" \
+              --generate-notes \
+              "${assets[@]}"
+          fi
