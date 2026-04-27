@@ -80,7 +80,9 @@ Only start after the GitHub release assets are visible.
    If `vcpkg` is not on PATH, use an existing `./vcpkg/vcpkg` binary or
    bootstrap vcpkg locally. Do not commit the `vcpkg/` checkout.
 6. Update `versions/baseline.json` so `ezd2step.baseline` is `X.Y.Z` and
-   `port-version` is `0`.
+   `port-version` matches the generated registry entry. This is usually `0`
+   for a pure version bump, but must be incremented when a same-version
+   portfile fix is committed after the first port bump.
 7. Verify the git-tree:
    ```bash
    git_tree=$(git rev-parse HEAD:ports/ezd2step)
@@ -100,9 +102,10 @@ Only start after the GitHub release assets are visible.
 Before reporting success, verify:
 
 - `gh release view vX.Y.Z` shows all four release assets.
-- `ports/ezd2step/vcpkg.json` is `X.Y.Z`.
-- `versions/baseline.json` is `X.Y.Z`.
-- `versions/e-/ezd2step.json` contains `X.Y.Z`.
+- `ports/ezd2step/vcpkg.json` is `X.Y.Z` with the expected `port-version`.
+- `versions/baseline.json` is `X.Y.Z` with the expected `port-version`.
+- `versions/e-/ezd2step.json` contains `X.Y.Z` with the expected
+  `port-version`.
 - `git rev-parse HEAD:ports/ezd2step` matches the new registry `git-tree`.
 - `git status -sb` has no unexpected tracked changes.
 
