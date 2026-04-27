@@ -9,6 +9,10 @@ on:
         description: "Release tag to build, for example v1.0.1"
         required: true
         type: string
+      checkout_ref:
+        description: "Optional ref to check out for dry-runs; defaults to tag_name"
+        required: false
+        type: string
       upload_to_release:
         description: "Upload generated assets to the GitHub release for tag_name"
         required: false
@@ -24,6 +28,7 @@ concurrency:
 
 env:
   RELEASE_TAG: ${{ github.event.release.tag_name || inputs.tag_name }}
+  CHECKOUT_REF: ${{ inputs.checkout_ref || github.event.release.tag_name || inputs.tag_name }}
 
 jobs:
   build-macos-arm64:
@@ -34,7 +39,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          ref: ${{ env.RELEASE_TAG }}
+          ref: ${{ env.CHECKOUT_REF }}
 
       - name: Set release version
         shell: bash
@@ -100,7 +105,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          ref: ${{ env.RELEASE_TAG }}
+          ref: ${{ env.CHECKOUT_REF }}
 
       - name: Set release version
         shell: pwsh
@@ -178,7 +183,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          ref: ${{ env.RELEASE_TAG }}
+          ref: ${{ env.CHECKOUT_REF }}
 
       - name: Set release version
         shell: bash
