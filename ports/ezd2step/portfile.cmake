@@ -2,6 +2,7 @@
 # Downloads pre-built bundle from GitHub Releases
 
 set(VCPKG_POLICY_EMPTY_INCLUDE_FOLDER enabled)
+set(VCPKG_POLICY_MISMATCHED_NUMBER_OF_BINARIES enabled)
 
 # Detect platform using vcpkg variables (not APPLE/WIN32 which don't work in script mode)
 if(VCPKG_TARGET_IS_OSX AND VCPKG_TARGET_ARCHITECTURE STREQUAL "arm64")
@@ -83,6 +84,15 @@ file(ARCHIVE_EXTRACT
 
 file(COPY "${CURRENT_BUILDTREES_DIR}/src/ezd2step-${VERSION}-${PLATFORM}/"
      DESTINATION "${CURRENT_PACKAGES_DIR}/tools/ezd2step" FILES_MATCHING PATTERN "*")
+
+if(VCPKG_TARGET_IS_OSX)
+    file(GLOB PACKAGE_DYLIBS "${CURRENT_PACKAGES_DIR}/tools/ezd2step/*.dylib")
+    if(PACKAGE_DYLIBS)
+        file(MAKE_DIRECTORY "${CURRENT_PACKAGES_DIR}/lib")
+        file(COPY ${PACKAGE_DYLIBS} DESTINATION "${CURRENT_PACKAGES_DIR}/lib")
+        file(REMOVE ${PACKAGE_DYLIBS})
+    endif()
+endif()
 
 file(MAKE_DIRECTORY "${CURRENT_PACKAGES_DIR}/share/${PORT}")
 configure_file(
