@@ -53,6 +53,7 @@ Standard_Boolean EzDesignJsonReader::ReadFile(const TCollection_AsciiString& the
   myLoops.clear();
   myFaces.clear();
   myShells.clear();
+  myBody = EzBody();
 
   try {
     OCC_CATCH_SIGNALS
@@ -105,15 +106,15 @@ Standard_Boolean EzDesignJsonReader::ReadFile(const TCollection_AsciiString& the
       }
     }
 
-    // Extract data from "bodies" entry (data.db.bodies structure)
+    // Extract data from "entities" entry (data.db.entities structure)
     json dataToParse = jsonData;
     if (jsonData.contains("data") && jsonData["data"].is_object() &&
         jsonData["data"].contains("db") && jsonData["data"]["db"].is_object() &&
-        jsonData["data"]["db"].contains("bodies") && jsonData["data"]["db"]["bodies"].is_object()) {
-      dataToParse = jsonData["data"]["db"]["bodies"];
+        jsonData["data"]["db"].contains("entities") && jsonData["data"]["db"]["entities"].is_object()) {
+      dataToParse = jsonData["data"]["db"]["entities"];
     }
     else {
-      addError("Invalid document structure: missing 'data.db.bodies' field");
+      addError("Invalid document structure: missing 'data.db.entities' field");
       return Standard_False;
     }
 
@@ -252,9 +253,9 @@ Standard_Boolean EzDesignJsonReader::parseVertex(const json& theJson, int theId)
     return Standard_False;
   }
 
-  // Parse half_edge (optional)
-  if (data.contains("half_edge")) {
-    vertex.half_edge_id = data["half_edge"].get<int>();
+  // Parse half_edge_id (optional)
+  if (data.contains("half_edge_id")) {
+    vertex.half_edge_id = data["half_edge_id"].get<int>();
   }
   else {
     vertex.half_edge_id = 0;
@@ -280,12 +281,12 @@ Standard_Boolean EzDesignJsonReader::parseEdge(const json& theJson, int theId)
   }
   const json& data = theJson["data"];
 
-  // Parse half_edge
-  if (data.contains("half_edge")) {
-    edge.half_edge_id = data["half_edge"].get<int>();
+  // Parse half_edge_id
+  if (data.contains("half_edge_id")) {
+    edge.half_edge_id = data["half_edge_id"].get<int>();
   }
   else {
-    addError("Edge " + std::to_string(theId) + " missing 'data.half_edge' field");
+    addError("Edge " + std::to_string(theId) + " missing 'data.half_edge_id' field");
     return Standard_False;
   }
 
@@ -310,46 +311,46 @@ Standard_Boolean EzDesignJsonReader::parseHalfEdge(const json& theJson, int theI
   const json& data = theJson["data"];
 
   // Parse required fields
-  if (data.contains("edge")) {
-    halfEdge.edge_id = data["edge"].get<int>();
+  if (data.contains("edge_id")) {
+    halfEdge.edge_id = data["edge_id"].get<int>();
   }
   else {
-    addError("HalfEdge " + std::to_string(theId) + " missing 'data.edge' field");
+    addError("HalfEdge " + std::to_string(theId) + " missing 'data.edge_id' field");
     return Standard_False;
   }
 
-  if (data.contains("vertex")) {
-    halfEdge.vertex_id = data["vertex"].get<int>();
+  if (data.contains("vertex_id")) {
+    halfEdge.vertex_id = data["vertex_id"].get<int>();
   }
   else {
-    addError("HalfEdge " + std::to_string(theId) + " missing 'data.vertex' field");
+    addError("HalfEdge " + std::to_string(theId) + " missing 'data.vertex_id' field");
     return Standard_False;
   }
 
-  if (data.contains("loop")) {
-    halfEdge.loop_id = data["loop"].get<int>();
+  if (data.contains("loop_id")) {
+    halfEdge.loop_id = data["loop_id"].get<int>();
   }
   else {
     halfEdge.loop_id = 0;
   }
 
-  if (data.contains("next")) {
-    halfEdge.next_id = data["next"].get<int>();
+  if (data.contains("next_id")) {
+    halfEdge.next_id = data["next_id"].get<int>();
   }
   else {
-    addError("HalfEdge " + std::to_string(theId) + " missing 'data.next' field");
+    addError("HalfEdge " + std::to_string(theId) + " missing 'data.next_id' field");
     return Standard_False;
   }
 
-  if (data.contains("previous")) {
-    halfEdge.previous_id = data["previous"].get<int>();
+  if (data.contains("previous_id")) {
+    halfEdge.previous_id = data["previous_id"].get<int>();
   }
   else {
     halfEdge.previous_id = 0;
   }
 
-  if (data.contains("opposite")) {
-    halfEdge.opposite_id = data["opposite"].get<int>();
+  if (data.contains("opposite_id")) {
+    halfEdge.opposite_id = data["opposite_id"].get<int>();
   }
   else {
     halfEdge.opposite_id = 0;
@@ -383,19 +384,23 @@ Standard_Boolean EzDesignJsonReader::parseLoop(const json& theJson, int theId)
   }
   const json& data = theJson["data"];
 
-  if (data.contains("face")) {
-    loop.face_id = data["face"].get<int>();
+  if (data.contains("face_id")) {
+    loop.face_id = data["face_id"].get<int>();
+  }
+  else if (data.contains("owner_id") && data.contains("owner_kind") &&
+           data["owner_kind"].is_string() && data["owner_kind"].get<std::string>() == "Face") {
+    loop.face_id = data["owner_id"].get<int>();
   }
   else {
-    addError("Loop " + std::to_string(theId) + " missing 'data.face' field");
+    addError("Loop " + std::to_string(theId) + " missing 'data.face_id' or Face owner_id field");
     return Standard_False;
   }
 
-  if (data.contains("half_edge")) {
-    loop.half_edge_id = data["half_edge"].get<int>();
+  if (data.contains("half_edge_id")) {
+    loop.half_edge_id = data["half_edge_id"].get<int>();
   }
   else {
-    addError("Loop " + std::to_string(theId) + " missing 'data.half_edge' field");
+    addError("Loop " + std::to_string(theId) + " missing 'data.half_edge_id' field");
     return Standard_False;
   }
 
@@ -423,22 +428,22 @@ Standard_Boolean EzDesignJsonReader::parseFace(const json& theJson, int theId)
   std::string type = theJson.contains("type") ? theJson["type"].get<std::string>() : "";
   bool isSubdivisionFace = (type == "SubdivisionFace");
 
-  if (data.contains("shell")) {
-    face.shell_id = data["shell"].get<int>();
+  if (data.contains("shell_id")) {
+    face.shell_id = data["shell_id"].get<int>();
   }
   else {
-    addError("Face " + std::to_string(theId) + " missing 'data.shell' field");
+    addError("Face " + std::to_string(theId) + " missing 'data.shell_id' field");
     return Standard_False;
   }
 
-  // Parse loops
-  if (data.contains("loops") && data["loops"].is_array()) {
-    for (const auto& loopId : data["loops"]) {
+  // Parse loop_ids
+  if (data.contains("loop_ids") && data["loop_ids"].is_array()) {
+    for (const auto& loopId : data["loop_ids"]) {
       face.loop_ids.push_back(loopId.get<int>());
     }
   }
   else {
-    addError("Face " + std::to_string(theId) + " missing or invalid 'data.loops' field");
+    addError("Face " + std::to_string(theId) + " missing or invalid 'data.loop_ids' field");
     return Standard_False;
   }
 
@@ -486,22 +491,22 @@ Standard_Boolean EzDesignJsonReader::parseShell(const json& theJson, int theId)
   }
   const json& data = theJson["data"];
 
-  if (data.contains("body")) {
-    shell.body_id = data["body"].get<int>();
+  if (data.contains("body_id")) {
+    shell.body_id = data["body_id"].get<int>();
   }
   else {
-    addError("Shell " + std::to_string(theId) + " missing 'data.body' field");
+    addError("Shell " + std::to_string(theId) + " missing 'data.body_id' field");
     return Standard_False;
   }
 
-  // Parse faces
-  if (data.contains("faces") && data["faces"].is_array()) {
-    for (const auto& faceId : data["faces"]) {
+  // Parse face_ids
+  if (data.contains("face_ids") && data["face_ids"].is_array()) {
+    for (const auto& faceId : data["face_ids"]) {
       shell.face_ids.push_back(faceId.get<int>());
     }
   }
   else {
-    addError("Shell " + std::to_string(theId) + " missing or invalid 'data.faces' field");
+    addError("Shell " + std::to_string(theId) + " missing or invalid 'data.face_ids' field");
     return Standard_False;
   }
 
@@ -524,14 +529,14 @@ Standard_Boolean EzDesignJsonReader::parseBody(const json& theJson, int theId)
   }
   const json& data = theJson["data"];
 
-  // Parse shells
-  if (data.contains("shells") && data["shells"].is_array()) {
-    for (const auto& shellId : data["shells"]) {
+  // Parse shell_ids
+  if (data.contains("shell_ids") && data["shell_ids"].is_array()) {
+    for (const auto& shellId : data["shell_ids"]) {
       myBody.shell_ids.push_back(shellId.get<int>());
     }
   }
   else {
-    addError("Body " + std::to_string(theId) + " missing or invalid 'data.shells' field");
+    addError("Body " + std::to_string(theId) + " missing or invalid 'data.shell_ids' field");
     return Standard_False;
   }
 
