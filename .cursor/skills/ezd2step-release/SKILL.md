@@ -96,6 +96,42 @@ Only start after the GitHub release assets are visible.
    ```
 9. Push the commits to `main`. If branch protection blocks direct push, open a
    PR with the two commits and stop for merge approval.
+10. After the vcpkg bump is pushed, provide a self-contained downstream update
+    prompt. Derive the values from the pushed registry state:
+    ```bash
+    git fetch origin main --tags --prune
+    registry_baseline=$(git rev-parse origin/main)
+    port_version=$(python3 -c 'import json; print(json.load(open("ports/ezd2step/vcpkg.json")).get("port-version", 0))')
+    port_git_tree=$(VERSION=X.Y.Z PORT_VERSION="$port_version" python3 -c 'import json, os; version=os.environ["VERSION"]; port_version=int(os.environ["PORT_VERSION"]); print(next(v["git-tree"] for v in json.load(open("versions/e-/ezd2step.json"))["versions"] if v["version"] == version and v.get("port-version", 0) == port_version))')
+    ```
+    Use this prompt format:
+    ```text
+    Update this project to use ezd2step vX.Y.Z from the custom vcpkg registry.
+
+    Registry:
+    https://github.com/yordaa/ezdesign-step-bridge.git
+
+    Pin the vcpkg registry baseline to:
+    <registry_baseline>
+
+    Target package:
+    ezd2step X.Y.Z#<port-version>
+
+    Expected port git-tree:
+    <port_git_tree>
+
+    Please:
+    1. Inspect the existing vcpkg setup, including `vcpkg.json`,
+       `vcpkg-configuration.json`, manifest baselines, CI, and build docs.
+    2. Update the custom registry baseline/reference so ezd2step resolves to
+       `X.Y.Z#<port-version>`.
+    3. Do not vendor release assets manually. The port downloads official
+       assets from:
+       https://github.com/yordaa/ezdesign-step-bridge/releases/tag/vX.Y.Z
+    4. Run the project's normal vcpkg install/configure/build verification.
+    5. Confirm ezd2step installs successfully and, if practical, run
+       `ezd2step --help` from the installed package.
+    ```
 
 ## Final Verification
 
@@ -107,6 +143,8 @@ Before reporting success, verify:
 - `versions/e-/ezd2step.json` contains `X.Y.Z` with the expected
   `port-version`.
 - `git rev-parse HEAD:ports/ezd2step` matches the new registry `git-tree`.
+- A self-contained downstream update prompt was provided with the registry
+  baseline commit, target package version, and port git-tree.
 - `git status -sb` has no unexpected tracked changes.
 
 ## Stop Conditions
