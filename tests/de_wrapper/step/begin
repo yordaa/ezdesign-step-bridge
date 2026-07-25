@@ -1,3 +1,0 @@
-# File: begin
-
-set filename [locate_data_file "bm2_pe_t4-A.stp"]

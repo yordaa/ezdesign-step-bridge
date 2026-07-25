@@ -1,4 +1,0 @@
-if { $::tcl_platform(os) == "Darwin" } {
-  # Ray-Tracing doesn't work with Compatible Profile on macOS
-  vcaps -core
-}

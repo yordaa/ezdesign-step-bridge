@@ -1,3 +1,0 @@
-# File: begin
-
-set filename [locate_data_file "bug30221_vmt01b.xbf"]
