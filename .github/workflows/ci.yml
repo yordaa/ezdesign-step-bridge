@@ -23,9 +23,9 @@ jobs:
           path: |
             .vcpkg-binary-cache
             build/vcpkg_installed
-          key: ${{ runner.os }}-${{ matrix.triplet }}-vcpkg-${{ hashFiles('vcpkg.json', 'triplets/**') }}
+          key: ${{ matrix.os }}-${{ matrix.triplet }}-vcpkg-${{ hashFiles('vcpkg.json', 'triplets/**') }}
           restore-keys: |
-            ${{ runner.os }}-${{ matrix.triplet }}-vcpkg-
+            ${{ matrix.os }}-${{ matrix.triplet }}-vcpkg-
       - uses: lukka/run-vcpkg@v11
         env:
           VCPKG_BINARY_SOURCES: clear;files,${{ github.workspace }}/.vcpkg-binary-cache,readwrite
