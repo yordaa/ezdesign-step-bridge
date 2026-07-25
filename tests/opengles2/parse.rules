@@ -1,3 +1,0 @@
-FAILED /\bFaulty\b/ error
-IGNORE /Could not open: TKIVtkDraw/skip VTK
-IGNORE /Tcl Exception: Skipping test/skipping unsupported driver

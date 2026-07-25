@@ -1,3 +1,0 @@
-# File: begin
-
-set filename [locate_data_file "bug24490_face_naturalrestriction_flag.brep"]
