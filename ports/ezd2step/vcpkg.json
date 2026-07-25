@@ -1,9 +1,0 @@
-{
-  "name": "ezd2step",
-  "version": "1.0.2",
-  "port-version": 2,
-  "description": "EZDesign STEP file converter using OCCT",
-  "homepage": "https://github.com/yordaa/ezdesign-step-bridge",
-  "license": "LGPL-2.1",
-  "supports": "(osx & arm64) | (windows & x64)"
-}
