@@ -1,231 +1,54 @@
-# OCCT - EzDesign to STEP Converter
+# ezd2step
 
-This is a fork of [Open CASCADE Technology (OCCT)](https://github.com/Open-Cascade-SAS/OCCT) that provides a conversion bridge from the **ezdesign** JSON format to **STEP** files. The primary tool in this repository is `ezd2step`, which converts ezdesign geometry data into industry-standard STEP format.
+`ezd2step` converts proprietary EzDesign `.ezd` geometry files to STEP. This
+repository owns the product source, version in `CMakeLists.txt`, release tags,
+tests, and binary releases.
 
-## Overview
+OCCT and nlohmann-json are external dependencies installed by vcpkg. Neither
+OCCT nor vcpkg is vendored here.
 
-This repository extends OCCT with a specialized conversion tool (`ezd2step`) that:
+## Build and test
 
-- Reads ezdesign JSON files (`.ezd` format)
-- Converts B-spline surfaces, curves, and topology to OCCT's geometric kernel
-- Exports to STEP format (ISO 10303-21) for CAD interoperability
-- Preserves topology sharing (shared edges between faces)
-- Handles complex subdivision surface models
+Prerequisites: CMake 3.20+, a C++17 compiler, and a vcpkg checkout.
+
+```sh
+cmake -S . -B build \
+  -DCMAKE_TOOLCHAIN_FILE=/path/to/vcpkg/scripts/buildsystems/vcpkg.cmake \
+  -DVCPKG_TARGET_TRIPLET=arm64-osx-dynamic \
+  -DVCPKG_OVERLAY_TRIPLETS="$PWD/triplets" \
+  -DCMAKE_BUILD_TYPE=Release
+cmake --build build --config Release
+ctest --test-dir build -C Release --output-on-failure
+```
+
+On Windows x64, omit the overlay and use
+`-DVCPKG_TARGET_TRIPLET=x64-windows`.
+
+```sh
+build/ezd2step input.ezd output.step
+```
+
+## Release
+
+Tags named `v<version>` are the version authority and must match the version in
+`CMakeLists.txt`. The release workflow builds macOS arm64 and Windows x64
+bundles and publishes them to the matching GitHub release.
+
+## Registry
+
+Binary consumers use the separate private
+[`yordaa/ezdesign-vcpkg-registry`](https://github.com/yordaa/ezdesign-vcpkg-registry)
+Git registry. Its consumer example contains the required
+`vcpkg.json` and `vcpkg-configuration.json`.
+
+## Migration
+
+This repository previously vendored all of OCCT and contained its own vcpkg
+registry. The registry moved to `yordaa/ezdesign-vcpkg-registry`; OCCT and
+nlohmann-json now come from vcpkg. A vcpkg checkout is local build tooling, not
+a maintained repository.
 
 ## License
 
-This repository contains code under two different licenses:
-
-### Proprietary Code (`tools/ezd2step/`)
-
-All files in the `tools/ezd2step/` directory are **proprietary and confidential**. 
-See `tools/ezd2step/LICENSE` for terms and conditions.
-
-**Copyright (c) 2025 Yang Song. All rights reserved.**
-
-### OCCT Code (Everything Else)
-
-The rest of this repository is Open CASCADE Technology (OCCT), licensed under:
-
-- **GNU Lesser General Public License version 2.1** (LGPL 2.1) with special exception defined in `OCCT_LGPL_EXCEPTION.txt`
-- See `LICENSE_LGPL_21.txt` for complete license text
-- Alternatively, OCCT may be used under Open CASCADE commercial license
-
-**Note:** OCCT is provided on an "AS IS" basis, WITHOUT WARRANTY OF ANY KIND.
-
-### Distribution Notice
-
-When distributing binaries that link against OCCT libraries:
-- OCCT portions remain under LGPL 2.1
-- You must provide OCCT source code (or offer it)
-- You must include LGPL license notices
-- Your proprietary code in `tools/ezd2step/` can remain proprietary
-
-## Building
-
-### Prerequisites
-
-- CMake 3.12 or later
-- C++ compiler with C++17 support (Clang, GCC, or MSVC)
-- [vcpkg](https://github.com/microsoft/vcpkg) - Package manager for dependencies
-
-### Setup vcpkg
-
-This project uses vcpkg manifest mode to automatically manage dependencies. Set up vcpkg:
-
-```bash
-# Clone vcpkg into project directory (one-time setup)
-git clone https://github.com/microsoft/vcpkg.git ./vcpkg
-
-# Bootstrap vcpkg
-./vcpkg/bootstrap-vcpkg.sh  # On macOS/Linux
-# or
-.\vcpkg\bootstrap-vcpkg.bat  # On Windows
-```
-
-### Build Instructions
-
-```bash
-# ============================================
-# Step 1: Setup vcpkg (one-time setup)
-# ============================================
-
-# Clone vcpkg into project directory
-git clone https://github.com/microsoft/vcpkg.git ./vcpkg
-
-# Bootstrap vcpkg
-./vcpkg/bootstrap-vcpkg.sh  # On macOS/Linux
-# or
-.\vcpkg\bootstrap-vcpkg.bat  # On Windows
-
-
-# ============================================
-# Step 2: Configure CMake
-# ============================================
-
-cmake -B build -DCMAKE_TOOLCHAIN_FILE=./vcpkg/scripts/buildsystems/vcpkg.cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_MINIMAL_DISTRIBUTION=ON -DBUILD_MINIMAL_PROFILE=step-export-minimal -DUSE_TCL=OFF -DUSE_TK=OFF -DBUILD_MODULE_Draw=OFF -DUSE_FREETYPE=OFF
-
-
-# ============================================
-# Step 3: Build ezd2step
-# ============================================
-
-cmake --build build --config Release --target ezd2step -j8
-
-
-# ============================================
-# Step 4: Create Bundle
-# ============================================
-
-cmake --build build --config Release --target package_ezd2step_bundle
-
-
-# ============================================
-# Step 5: Generate Checksums
-# ============================================
-
-./tools/ezd2step/create_checksums.sh
-```
-
-**Optional: Build test suite**
-```bash
-cmake --build build --config Release --target test_basic_models -j8
-```
-
-**How it works:**
-- vcpkg automatically detects `tools/ezd2step/vcpkg.json` manifest file
-- Downloads and installs `nlohmann-json` automatically
-- Makes dependencies available to CMake via `find_package`
-
-**Note**: The build automatically disables unnecessary modules (TK, Draw, FreeType) for ezd2step since it's a command-line tool.
-
-The `ezd2step` executable will be located at:
-- `build/mac64/clang/bin/ezd2step` (macOS)
-- `build/linux64/gcc/bin/ezd2step` (Linux)
-- `build/win64/vc14/bin/ezd2step.exe` (Windows)
-
-## Usage
-
-### Basic Conversion
-
-```bash
-ezd2step <input.ezd> <output.step>
-```
-
-Example:
-```bash
-ezd2step model.ezd model.step
-```
-
-### Test Suite
-
-Run the test suite to verify conversion on sample models:
-
-```bash
-# Set path to ezd2step (if not in PATH)
-export EZD2STEP_PATH=build/mac64/clang/bin/ezd2step
-
-# Run tests
-build/mac64/clang/bin/test_basic_models
-```
-
-The test suite validates:
-- Single-face models
-- Double-face models (with shared edges)
-- Multi-face models (3+ faces)
-
-Each test:
-1. Converts the JSON file to STEP
-2. Reads the STEP file back using OCCT
-3. Validates face counts and topology
-
-## Project Structure
-
-```
-tools/ezd2step/
-├── ezd2step.cxx              # Main executable
-├── EzDesignJsonReader.*      # JSON file parser
-├── EzDesignToOCCTConverter.* # Core conversion logic
-├── EzDesignTypes.hxx         # Data structure definitions
-├── test_basic_models.cxx     # Test suite
-└── CMakeLists.txt            # Build configuration
-```
-
-## Key Features
-
-### Topology Preservation
-
-The converter correctly handles shared edges between faces:
-- Maps JSON `edge_id` to OCCT `TopoDS_Edge` objects
-- Ensures a single `EDGE_CURVE` entity in STEP for geometrically identical edges
-- Multiple `ORIENTED_EDGE` entities reference the same `EDGE_CURVE`
-
-### Geometric Accuracy
-
-- **Tolerance computation**: Vertex tolerances are computed based on actual distances between curve endpoints and vertex positions
-- **Pcurve handling**: 2D parametric curves on surfaces are correctly associated with edges
-- **Surface evaluation**: B-spline surfaces are properly constructed from control points and knot vectors
-
-### Error Handling
-
-The converter reports errors for:
-- Invalid JSON structure
-- Missing or invalid geometry data
-- Edge creation failures
-- Topology validation issues
-
-Errors are collected and reported at the end of conversion.
-
-## Limitations
-
-- Rational B-spline surfaces (with weights) are currently treated as non-rational
-- Only B-spline geometry is supported (no NURBS weights)
-- Input must be valid ezdesign JSON format
-
-## Development
-
-### Adding New Features
-
-The conversion pipeline:
-1. `EzDesignJsonReader`: Parses JSON and builds in-memory data structures
-2. `EzDesignToOCCTConverter`: Converts to OCCT topology (`TopoDS_Shape`)
-3. `STEPControl_Writer`: Writes OCCT shapes to STEP format
-
-To extend functionality:
-- Modify `EzDesignToOCCTConverter` for new geometry types
-- Update `EzDesignTypes.hxx` for new JSON structures
-- Add validation in conversion methods
-
-### Testing
-
-Add new test cases to `test_basic_models.cxx` or create additional test executables following the same pattern.
-
-## References
-
-- [Open CASCADE Technology](https://dev.opencascade.org/) - Original OCCT project
-- [STEP Format (ISO 10303-21)](https://www.iso.org/standard/63141.html) - CAD data exchange standard
-- [OCCT Documentation](https://dev.opencascade.org/doc/overview) - OCCT API reference
-
-## Version
-
-Based on OCCT version defined in [`adm/cmake/version.cmake`](adm/cmake/version.cmake).
+The ezd2step source is proprietary. See `LICENSE` and `NOTICE`. Distributed
+OCCT libraries remain subject to OCCT's LGPL-2.1 terms.

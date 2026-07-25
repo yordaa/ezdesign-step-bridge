@@ -1,1 +1,0 @@
-testgrid -outdir results/macos-gcc-x64 caf basic
