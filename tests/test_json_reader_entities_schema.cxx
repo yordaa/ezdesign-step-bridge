@@ -9,6 +9,7 @@
 #include "EzDesignJsonReader.hxx"
 
 #include <cstdio>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <string>
@@ -46,7 +47,8 @@ bool expect(Standard_Boolean theCondition, const std::string& theMessage)
 
 bool testEntitiesSchemaParsesReferenceIds()
 {
-  const std::string aPath = "/tmp/ezd2step-reader-entities-schema.ezd";
+  const std::string aPath =
+    (std::filesystem::temp_directory_path() / "ezd2step-reader-entities-schema.ezd").string();
   const std::string aJson = R"JSON(
 {
   "metadata": {
@@ -163,7 +165,8 @@ bool testEntitiesSchemaParsesReferenceIds()
 
 bool testLegacyBodiesWrapperIsRejected()
 {
-  const std::string aPath = "/tmp/ezd2step-reader-legacy-bodies.ezd";
+  const std::string aPath =
+    (std::filesystem::temp_directory_path() / "ezd2step-reader-legacy-bodies.ezd").string();
   const std::string aJson = R"JSON(
 {
   "metadata": {
