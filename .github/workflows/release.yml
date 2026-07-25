@@ -14,11 +14,9 @@ jobs:
         include:
           - os: macos-15
             triplet: arm64-osx-dynamic
-            overlay: -DVCPKG_OVERLAY_TRIPLETS=${{ github.workspace }}/triplets
             artifact: ezd2step-macos-arm64
           - os: windows-2022
             triplet: x64-windows
-            overlay: ""
             artifact: ezd2step-windows-x64
     runs-on: ${{ matrix.os }}
     steps:
@@ -34,7 +32,7 @@ jobs:
           cmake -S . -B build
           -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake
           -DVCPKG_TARGET_TRIPLET=${{ matrix.triplet }}
-          ${{ matrix.overlay }}
+          -DVCPKG_OVERLAY_TRIPLETS=${{ github.workspace }}/triplets
           -DCMAKE_BUILD_TYPE=Release
       - name: Build and test
         run: |
