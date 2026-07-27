@@ -7,8 +7,7 @@
     {
       "kind": "git",
       "repository": "https://github.com/yordaa/ezdesign-vcpkg-registry",
-      "reference": "xwyu/issue-10-minimal-occt",
-      "baseline": "7f889f16c2e6d1290a58e8ca66ab8d9dcb0e5cea",
+      "baseline": "d0c4e6154da5340b937986d30f5de052843dc205",
       "packages": [
         "opencascade"
       ]
