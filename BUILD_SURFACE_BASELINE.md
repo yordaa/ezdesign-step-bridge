@@ -119,10 +119,45 @@ The package boundary itself works:
 
 However, `TKDESTEP`'s exported dependencies pull 12 toolkits beyond the starting ceiling into the CLI's direct link set. These are transitive requirements under the current package metadata and are not proven removable by this measurement. Disabling vcpkg default features does not change the OCCT module set and still builds OpenGL on macOS.
 
-## Decision and blocker
+## Narrow registry port verification
 
-The curated port proves that the standalone converter can use normal CMake package targets, but it does not meet the minimal build-surface criteria. A narrow registry-side OCCT override is justified to stop building the 26 demonstrated-unused toolkits. Any attempt to remove the 12 exported transitive toolkits requires a separate source/link check first.
+The registry-side port disables every OCCT module and asks OCCT to build
+`TKDESTEP` as its only additional toolkit:
 
-Issue #10 should place the narrow OCCT override in the separate registry and
-rerun the same macOS arm64 measurements plus Windows x64 CI. That optimization
-is deliberately outside the repository split in issue #9.
+```cmake
+-DBUILD_ADDITIONAL_TOOLKITS=TKDESTEP
+-DBUILD_MODULE_ApplicationFramework=OFF
+-DBUILD_MODULE_DataExchange=OFF
+-DBUILD_MODULE_DETools=OFF
+-DBUILD_MODULE_Draw=OFF
+-DBUILD_MODULE_FoundationClasses=OFF
+-DBUILD_MODULE_ModelingAlgorithms=OFF
+-DBUILD_MODULE_ModelingData=OFF
+-DBUILD_MODULE_Visualization=OFF
+```
+
+OCCT computes the complete transitive closure itself. On Windows x64 this
+produced exactly the 23 toolkits linked by the converter, rather than the
+curated port's 49:
+
+```text
+TKBO TKBRep TKCAF TKCDF TKDE TKDESTEP TKG2d TKG3d TKGeomAlgo
+TKGeomBase TKHLR TKLCAF TKMath TKMesh TKPrim TKService TKShHealing
+TKTopAlgo TKV3d TKVCAF TKXCAF TKXSBase TKernel
+```
+
+The port no longer depends on OpenGL. The Windows x64 package contained 23
+Release and 23 Debug libraries (819,946,873 bytes including headers and debug
+artifacts). The Release bundle contained those 23 runtime libraries:
+
+| Measurement | Result |
+| --- | ---: |
+| vcpkg dependency build | 19 min |
+| Bundle directory | 33,884,324 bytes |
+| Bundle archive | 13,110,612 bytes |
+| CLI executable | 250,880 bytes |
+| Product CTest checks | 2 passed |
+| Extracted bundle smoke checks | 9 passed |
+
+Removing any toolkit from this 23-toolkit closure requires an OCCT
+source/link change and is outside issue #10.

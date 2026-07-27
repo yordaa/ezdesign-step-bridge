@@ -23,7 +23,7 @@ jobs:
           path: |
             .vcpkg-binary-cache
             build/vcpkg_installed
-          key: ${{ matrix.os }}-${{ matrix.triplet }}-vcpkg-${{ hashFiles('vcpkg.json', 'triplets/**') }}
+          key: ${{ matrix.os }}-${{ matrix.triplet }}-vcpkg-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json', 'triplets/**') }}
           restore-keys: |
             ${{ matrix.os }}-${{ matrix.triplet }}-vcpkg-
       - uses: lukka/run-vcpkg@v11
