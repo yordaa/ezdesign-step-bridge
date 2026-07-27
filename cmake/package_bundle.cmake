@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 3.20)
 
+if(POLICY CMP0207)
+  cmake_policy(SET CMP0207 NEW)
+endif()
+
 if(NOT EXISTS "${EZD2STEP_EXECUTABLE}")
   message(FATAL_ERROR "Missing ezd2step executable: ${EZD2STEP_EXECUTABLE}")
 endif()
@@ -28,7 +32,10 @@ file(GET_RUNTIME_DEPENDENCIES
   RESOLVED_DEPENDENCIES_VAR dependencies
   UNRESOLVED_DEPENDENCIES_VAR unresolved
   PRE_EXCLUDE_REGEXES "^api-ms-" "^ext-ms-"
-  POST_EXCLUDE_REGEXES "^/System/" "^/usr/lib/" "[/\\\\]Windows[/\\\\]System32[/\\\\]"
+  POST_EXCLUDE_REGEXES
+    "^/System/"
+    "^/usr/lib/"
+    "[/\\\\][Ww][Ii][Nn][Dd][Oo][Ww][Ss][/\\\\][Ss][Yy][Ss][Tt][Ee][Mm]32[/\\\\]"
 )
 if(unresolved)
   message(FATAL_ERROR "Unresolved runtime dependencies: ${unresolved}")

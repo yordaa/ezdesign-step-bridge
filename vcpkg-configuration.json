@@ -1,0 +1,17 @@
+{
+  "default-registry": {
+    "kind": "builtin",
+    "baseline": "6d332a018c433fad20822ff4b536e4ccdc3413bd"
+  },
+  "registries": [
+    {
+      "kind": "git",
+      "repository": "https://github.com/yordaa/ezdesign-vcpkg-registry",
+      "reference": "xwyu/issue-10-minimal-occt",
+      "baseline": "7f889f16c2e6d1290a58e8ca66ab8d9dcb0e5cea",
+      "packages": [
+        "opencascade"
+      ]
+    }
+  ]
+}

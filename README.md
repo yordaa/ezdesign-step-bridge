@@ -4,8 +4,9 @@
 repository owns the product source, version in `CMakeLists.txt`, release tags,
 tests, and binary releases.
 
-OCCT and nlohmann-json are external dependencies installed by vcpkg. Neither
-OCCT nor vcpkg is vendored here.
+OCCT and nlohmann-json are external dependencies installed by vcpkg. The
+shared registry supplies the minimal OCCT port; neither OCCT nor vcpkg is
+vendored here.
 
 ## Build and test
 
@@ -36,10 +37,10 @@ bundles and publishes them to the matching GitHub release.
 
 ## Registry
 
-Binary consumers use the separate private
+Source builds and binary consumers use the separate public
 [`yordaa/ezdesign-vcpkg-registry`](https://github.com/yordaa/ezdesign-vcpkg-registry)
-Git registry. Its consumer example contains the required
-`vcpkg.json` and `vcpkg-configuration.json`.
+Git registry. This repository selects its OCCT port through
+`vcpkg-configuration.json`; the registry consumer example selects ezd2step.
 
 ## Migration
 
