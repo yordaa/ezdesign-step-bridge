@@ -5,6 +5,8 @@ on:
 
 jobs:
   build:
+    env:
+      VCPKG_BINARY_SOURCES: clear;files,${{ github.workspace }}/.vcpkg-binary-cache,readwrite
     strategy:
       matrix:
         include:
@@ -22,12 +24,10 @@ jobs:
         with:
           path: |
             .vcpkg-binary-cache
-          key: ${{ matrix.os }}-${{ matrix.triplet }}-vcpkg-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json', 'triplets/**') }}
+          key: ${{ matrix.os }}-${{ matrix.triplet }}-vcpkg-v2-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json', 'triplets/**') }}
           restore-keys: |
-            ${{ matrix.os }}-${{ matrix.triplet }}-vcpkg-
+            ${{ matrix.os }}-${{ matrix.triplet }}-vcpkg-v2-
       - uses: lukka/run-vcpkg@v11
-        env:
-          VCPKG_BINARY_SOURCES: clear;files,${{ github.workspace }}/.vcpkg-binary-cache,readwrite
       - name: Configure
         run: >-
           cmake -S . -B build
