@@ -19,7 +19,6 @@
 #include <TopoDS_Face.hxx>
 #include <TopoDS_Shell.hxx>
 #include <Geom_BSplineSurface.hxx>
-#include <Geom_BSplineCurve.hxx>
 #include <Geom2d_BSplineCurve.hxx>
 #include "EzDesignTypes.hxx"
 #include "EzDesignJsonReader.hxx"
@@ -52,11 +51,6 @@ private:
   // Geometry conversion
   Handle(Geom_BSplineSurface) convertSurface(const EzSurfaceData& theData);
   Handle(Geom2d_BSplineCurve) convertCurve2D(const EzCurveData& theData);
-  Handle(Geom_BSplineCurve) convertCurve3D(
-    const Handle(Geom2d_BSplineCurve)& theCurve2d,
-    const Handle(Geom_BSplineSurface)& theSurface,
-    double theUMin,
-    double theUMax);
 
   // Topology conversion
   TopoDS_Vertex convertVertex(const EzVertex& theVertex);
@@ -84,17 +78,6 @@ private:
   TColgp_Array1OfPnt2d reshapeControlPoints2D(
     const std::vector<double>& theFlatData,
     int theNumPoints);
-  int computeSampleCount(const Handle(Geom2d_BSplineCurve)& theCurve2d);
-
-  // Accessors for topology elements
-  const EzVertex& getVertex(int theId) const;
-  const EzEdge& getEdge(int theId) const;
-  const EzHalfEdge& getHalfEdge(int theId) const;
-  const EzLoop& getLoop(int theId) const;
-  const EzFace& getFace(int theId) const;
-  const EzShell& getShell(int theId) const;
-  const EzHalfEdge& getNextHalfEdge(int theId) const;
-
   // Helper to add pcurve to existing edge (for edges shared between faces on different surfaces)
   void addPCurveToEdge(
     TopoDS_Edge& theEdge,
@@ -112,4 +95,3 @@ private:
 };
 
 #endif // _EzDesignToOCCTConverter_HeaderFile
-
