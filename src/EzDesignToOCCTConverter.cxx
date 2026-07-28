@@ -648,15 +648,6 @@ TColgp_Array1OfPnt2d EzDesignToOCCTConverter::reshapeControlPoints2D(
 }
 
 //=======================================================================
-// function : HasErrors
-// purpose  : Check for errors
-//=======================================================================
-Standard_Boolean EzDesignToOCCTConverter::HasErrors() const
-{
-  return !myErrors.empty();
-}
-
-//=======================================================================
 // function : GetErrors
 // purpose  : Get error messages
 //=======================================================================

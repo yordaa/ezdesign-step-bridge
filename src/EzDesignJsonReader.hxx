@@ -59,14 +59,8 @@ public:
   //! Get shell by ID
   Standard_EXPORT const EzShell& GetShell(int theId) const;
 
-  //! Validate parsed data
-  Standard_EXPORT Standard_Boolean Validate() const;
-
   //! Get validation errors
   Standard_EXPORT const std::vector<std::string>& GetErrors() const;
-
-  //! Check if reading was successful
-  Standard_EXPORT Standard_Boolean IsDone() const;
 
 private:
   //! Parse JSON object into topology/geometry structures
@@ -109,7 +103,7 @@ private:
   void addError(const std::string& theError);
 
   //! Validate topology structure
-  Standard_Boolean validateTopology() const;
+  Standard_Boolean validateTopology();
 
 private:
   EzBody myBody;
@@ -120,8 +114,6 @@ private:
   std::map<int, EzFace> myFaces;
   std::map<int, EzShell> myShells;
   std::vector<std::string> myErrors;
-  Standard_Boolean myIsDone;
 };
 
 #endif // _EzDesignJsonReader_HeaderFile
-

@@ -27,7 +27,6 @@ using json = nlohmann::json;
 // purpose  : Constructor
 //=======================================================================
 EzDesignJsonReader::EzDesignJsonReader()
-: myIsDone(Standard_False)
 {
 }
 
@@ -45,7 +44,6 @@ EzDesignJsonReader::~EzDesignJsonReader()
 //=======================================================================
 Standard_Boolean EzDesignJsonReader::ReadFile(const TCollection_AsciiString& theFileName)
 {
-  myIsDone = Standard_False;
   myErrors.clear();
   myVertices.clear();
   myEdges.clear();
@@ -124,11 +122,10 @@ Standard_Boolean EzDesignJsonReader::ReadFile(const TCollection_AsciiString& the
     }
 
     // Validate parsed data
-    if (!Validate()) {
+    if (!validateTopology()) {
       return Standard_False;
     }
 
-    myIsDone = Standard_True;
     return Standard_True;
   }
   catch (const json::parse_error& e) {
@@ -795,19 +792,11 @@ const EzShell& EzDesignJsonReader::GetShell(int theId) const
 }
 
 //=======================================================================
-// function : Validate
-// purpose  : Validate parsed data
-//=======================================================================
-Standard_Boolean EzDesignJsonReader::Validate() const
-{
-  return validateTopology();
-}
-
 //=======================================================================
 // function : validateTopology
 // purpose  : Validate topology structure
 //=======================================================================
-Standard_Boolean EzDesignJsonReader::validateTopology() const
+Standard_Boolean EzDesignJsonReader::validateTopology()
 {
   // Create mutable copy for error collection
   std::vector<std::string> errors;
@@ -858,10 +847,7 @@ Standard_Boolean EzDesignJsonReader::validateTopology() const
     }
   }
 
-  // Copy errors to member (need const_cast for const method)
-  const_cast<EzDesignJsonReader*>(this)->myErrors.insert(
-    const_cast<EzDesignJsonReader*>(this)->myErrors.end(),
-    errors.begin(), errors.end());
+  myErrors.insert(myErrors.end(), errors.begin(), errors.end());
 
   return errors.empty() && myErrors.empty();
 }
@@ -876,15 +862,6 @@ const std::vector<std::string>& EzDesignJsonReader::GetErrors() const
 }
 
 //=======================================================================
-// function : IsDone
-// purpose  : Check if reading was successful
-//=======================================================================
-Standard_Boolean EzDesignJsonReader::IsDone() const
-{
-  return myIsDone;
-}
-
-//=======================================================================
 // function : addError
 // purpose  : Add validation error
 //=======================================================================
@@ -892,4 +869,3 @@ void EzDesignJsonReader::addError(const std::string& theError)
 {
   myErrors.push_back(theError);
 }
-
