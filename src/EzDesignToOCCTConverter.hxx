@@ -53,12 +53,10 @@ private:
   TopoDS_Vertex convertVertex(const EzVertex& theVertex);
   TopoDS_Edge convertHalfEdge(
     const EzHalfEdge& theHalfEdge,
-    const Handle(Geom_BSplineSurface)& theSurface,
-    bool theIsSurfaceNormalSame);
+    const Handle(Geom_BSplineSurface)& theSurface);
   TopoDS_Wire convertLoop(
     const EzLoop& theLoop,
-    const Handle(Geom_BSplineSurface)& theSurface,
-    bool theIsSurfaceNormalSame);
+    const Handle(Geom_BSplineSurface)& theSurface);
   TopoDS_Face convertFace(const EzFace& theFace);
   TopoDS_Shell convertShell(const EzShell& theShell);
   TopoDS_Shape convertBody(const EzBody& theBody);

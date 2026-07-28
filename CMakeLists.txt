@@ -56,6 +56,11 @@ if(BUILD_TESTING)
   )
   ezd2step_target(test_knot_validation)
 
+  add_executable(test_face_orientation
+    tests/test_face_orientation.cxx
+  )
+  ezd2step_target(test_face_orientation)
+
   add_test(NAME json_reader_entities_schema
     COMMAND test_json_reader_entities_schema
   )
@@ -74,5 +79,18 @@ if(BUILD_TESTING)
   )
   add_test(NAME knot_validation
     COMMAND test_knot_validation "${CMAKE_CURRENT_SOURCE_DIR}/tests/data/20260427.ezd"
+  )
+
+  set(EZD2STEP_ORIENTATION_OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/orientation-pair.step")
+  add_test(NAME cli_conversion_orientation_pair
+    COMMAND "${CMAKE_INSTALL_FULL_BINDIR}/ezd2step${CMAKE_EXECUTABLE_SUFFIX}"
+            "${CMAKE_CURRENT_SOURCE_DIR}/tests/data/orientation-pair.ezd"
+            "${EZD2STEP_ORIENTATION_OUTPUT}"
+  )
+  add_test(NAME face_orientation_round_trip
+    COMMAND test_face_orientation "${EZD2STEP_ORIENTATION_OUTPUT}"
+  )
+  set_tests_properties(face_orientation_round_trip PROPERTIES
+    DEPENDS cli_conversion_orientation_pair
   )
 endif()

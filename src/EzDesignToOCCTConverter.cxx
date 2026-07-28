@@ -153,7 +153,7 @@ TopoDS_Face EzDesignToOCCTConverter::convertFace(const EzFace& theFace)
   bool isFirstLoop = true;
   for (int loopId : theFace.loop_ids) {
     const EzLoop& loop = myReader.GetLoop(loopId);
-    TopoDS_Wire wire = convertLoop(loop, surface, theFace.is_surface_normal_same);
+    TopoDS_Wire wire = convertLoop(loop, surface);
 
     if (wire.IsNull()) {
       addError("Face " + std::to_string(theFace.id) + ": Failed to convert loop " + std::to_string(loopId));
@@ -193,13 +193,15 @@ TopoDS_Face EzDesignToOCCTConverter::convertFace(const EzFace& theFace)
   }
 
   TopoDS_Face resultFace = faceMaker.Face();
+  if (!theFace.is_surface_normal_same) {
+    resultFace.Reverse();
+  }
   return resultFace;
 }
 
 TopoDS_Wire EzDesignToOCCTConverter::convertLoop(
   const EzLoop& theLoop,
-  const Handle(Geom_BSplineSurface)& theSurface,
-  bool theIsSurfaceNormalSame)
+  const Handle(Geom_BSplineSurface)& theSurface)
 {
   BRepBuilderAPI_MakeWire wireMaker;
 
@@ -222,7 +224,7 @@ TopoDS_Wire EzDesignToOCCTConverter::convertLoop(
       return TopoDS_Wire();
     }
 
-    TopoDS_Edge edge = convertHalfEdge(halfEdge, theSurface, theIsSurfaceNormalSame);
+    TopoDS_Edge edge = convertHalfEdge(halfEdge, theSurface);
     if (edge.IsNull()) {
       addError("Loop " + std::to_string(theLoop.id) + ": Failed to convert half-edge " + std::to_string(currentHeId));
       return TopoDS_Wire();
@@ -250,8 +252,7 @@ TopoDS_Wire EzDesignToOCCTConverter::convertLoop(
 
 TopoDS_Edge EzDesignToOCCTConverter::convertHalfEdge(
   const EzHalfEdge& theHalfEdge,
-  const Handle(Geom_BSplineSurface)& theSurface,
-  bool /*theIsSurfaceNormalSame*/)
+  const Handle(Geom_BSplineSurface)& theSurface)
 {
   // 0. Skip conceptual half-edges (loop_id == 0 means conceptual only, no real meaning)
   if (theHalfEdge.loop_id == 0) {
