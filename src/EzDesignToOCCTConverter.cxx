@@ -36,27 +36,15 @@
 #include <gp_Dir2d.hxx>
 #include <sstream>
 
-//=======================================================================
-// function : EzDesignToOCCTConverter
-// purpose  : Constructor
-//=======================================================================
 EzDesignToOCCTConverter::EzDesignToOCCTConverter(const EzDesignJsonReader& theReader)
 : myReader(theReader)
 {
 }
 
-//=======================================================================
-// function : ~EzDesignToOCCTConverter
-// purpose  : Destructor
-//=======================================================================
 EzDesignToOCCTConverter::~EzDesignToOCCTConverter()
 {
 }
 
-//=======================================================================
-// function : ConvertBody
-// purpose  : Convert body to TopoDS_Shape
-//=======================================================================
 TopoDS_Shape EzDesignToOCCTConverter::ConvertBody(const EzBody& theBody)
 {
   myErrors.clear();
@@ -81,10 +69,6 @@ TopoDS_Shape EzDesignToOCCTConverter::ConvertBody(const EzBody& theBody)
   }
 }
 
-//=======================================================================
-// function : convertBody
-// purpose  : Convert body to TopoDS_Shape
-//=======================================================================
 TopoDS_Shape EzDesignToOCCTConverter::convertBody(const EzBody& theBody)
 {
   if (theBody.shell_ids.empty()) {
@@ -130,10 +114,6 @@ TopoDS_Shape EzDesignToOCCTConverter::convertBody(const EzBody& theBody)
   }
 }
 
-//=======================================================================
-// function : convertShell
-// purpose  : Convert shell to TopoDS_Shell
-//=======================================================================
 TopoDS_Shell EzDesignToOCCTConverter::convertShell(const EzShell& theShell)
 {
   BRep_Builder builder;
@@ -153,10 +133,6 @@ TopoDS_Shell EzDesignToOCCTConverter::convertShell(const EzShell& theShell)
   return resultShell;
 }
 
-//=======================================================================
-// function : convertFace
-// purpose  : Convert face to TopoDS_Face
-//=======================================================================
 TopoDS_Face EzDesignToOCCTConverter::convertFace(const EzFace& theFace)
 {
   // 1. Convert surface
@@ -220,10 +196,6 @@ TopoDS_Face EzDesignToOCCTConverter::convertFace(const EzFace& theFace)
   return resultFace;
 }
 
-//=======================================================================
-// function : convertLoop
-// purpose  : Convert loop to TopoDS_Wire
-//=======================================================================
 TopoDS_Wire EzDesignToOCCTConverter::convertLoop(
   const EzLoop& theLoop,
   const Handle(Geom_BSplineSurface)& theSurface,
@@ -276,10 +248,6 @@ TopoDS_Wire EzDesignToOCCTConverter::convertLoop(
   return wire;
 }
 
-//=======================================================================
-// function : convertHalfEdge
-// purpose  : Convert half-edge to TopoDS_Edge
-//=======================================================================
 TopoDS_Edge EzDesignToOCCTConverter::convertHalfEdge(
   const EzHalfEdge& theHalfEdge,
   const Handle(Geom_BSplineSurface)& theSurface,
@@ -406,10 +374,6 @@ TopoDS_Edge EzDesignToOCCTConverter::convertHalfEdge(
   return newEdge;
 }
 
-//=======================================================================
-// function : addPCurveToEdge
-// purpose  : Add pcurve to existing edge (for edges shared between faces on different surfaces)
-//=======================================================================
 void EzDesignToOCCTConverter::addPCurveToEdge(
   TopoDS_Edge& theEdge,
   const EzHalfEdge& theHalfEdge,
@@ -481,10 +445,6 @@ void EzDesignToOCCTConverter::addPCurveToEdge(
   builder.Range(theEdge, theSurface, TopLoc_Location(), uMin, uMax);
 }
 
-//=======================================================================
-// function : convertVertex
-// purpose  : Convert vertex to TopoDS_Vertex
-//=======================================================================
 TopoDS_Vertex EzDesignToOCCTConverter::convertVertex(const EzVertex& theVertex)
 {
   // Check if this vertex has already been converted
@@ -506,10 +466,6 @@ TopoDS_Vertex EzDesignToOCCTConverter::convertVertex(const EzVertex& theVertex)
   return vertex;
 }
 
-//=======================================================================
-// function : convertSurface
-// purpose  : Convert B-spline surface
-//=======================================================================
 Handle(Geom_BSplineSurface) EzDesignToOCCTConverter::convertSurface(const EzSurfaceData& theData)
 {
   const auto& cp = theData.control_points;
@@ -530,10 +486,6 @@ Handle(Geom_BSplineSurface) EzDesignToOCCTConverter::convertSurface(const EzSurf
   return new Geom_BSplineSurface(poles, uKnots, vKnots, uMults, vMults, uBasis.degree, vBasis.degree);
 }
 
-//=======================================================================
-// function : convertCurve2D
-// purpose  : Convert 2D B-spline curve
-//=======================================================================
 Handle(Geom2d_BSplineCurve) EzDesignToOCCTConverter::convertCurve2D(const EzCurveData& theData)
 {
   const auto& cp = theData.control_points;
@@ -566,10 +518,6 @@ Handle(Geom2d_BSplineCurve) EzDesignToOCCTConverter::convertCurve2D(const EzCurv
   return new Geom2d_BSplineCurve(poles, knots, mults, basis.degree);
 }
 
-//=======================================================================
-// function : buildKnotData
-// purpose  : Convert a flat knot sequence and validate its pole count
-//=======================================================================
 bool EzDesignToOCCTConverter::buildKnotData(
   const std::vector<double>& theKnotSequence,
   int theDegree,
@@ -602,10 +550,6 @@ bool EzDesignToOCCTConverter::buildKnotData(
   return true;
 }
 
-//=======================================================================
-// function : reshapeControlPoints3D
-// purpose  : Reshape 3D control points from flat array to 2D grid
-//=======================================================================
 TColgp_Array2OfPnt EzDesignToOCCTConverter::reshapeControlPoints3D(
   const std::vector<double>& theFlatData,
   int theNumU,
@@ -626,10 +570,6 @@ TColgp_Array2OfPnt EzDesignToOCCTConverter::reshapeControlPoints3D(
   return poles;
 }
 
-//=======================================================================
-// function : reshapeControlPoints2D
-// purpose  : Reshape 2D control points from flat array to 1D array
-//=======================================================================
 TColgp_Array1OfPnt2d EzDesignToOCCTConverter::reshapeControlPoints2D(
   const std::vector<double>& theFlatData,
   int theNumPoints)
@@ -647,19 +587,11 @@ TColgp_Array1OfPnt2d EzDesignToOCCTConverter::reshapeControlPoints2D(
   return poles;
 }
 
-//=======================================================================
-// function : GetErrors
-// purpose  : Get error messages
-//=======================================================================
 const std::vector<std::string>& EzDesignToOCCTConverter::GetErrors() const
 {
   return myErrors;
 }
 
-//=======================================================================
-// function : addError
-// purpose  : Add error message
-//=======================================================================
 void EzDesignToOCCTConverter::addError(const std::string& theError)
 {
   myErrors.push_back(theError);

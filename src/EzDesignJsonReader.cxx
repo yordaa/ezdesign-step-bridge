@@ -22,26 +22,14 @@
 
 using json = nlohmann::json;
 
-//=======================================================================
-// function : EzDesignJsonReader
-// purpose  : Constructor
-//=======================================================================
 EzDesignJsonReader::EzDesignJsonReader()
 {
 }
 
-//=======================================================================
-// function : ~EzDesignJsonReader
-// purpose  : Destructor
-//=======================================================================
 EzDesignJsonReader::~EzDesignJsonReader()
 {
 }
 
-//=======================================================================
-// function : ReadFile
-// purpose  : Read JSON file and parse topology/geometry data
-//=======================================================================
 Standard_Boolean EzDesignJsonReader::ReadFile(const TCollection_AsciiString& theFileName)
 {
   myErrors.clear();
@@ -148,10 +136,6 @@ Standard_Boolean EzDesignJsonReader::ReadFile(const TCollection_AsciiString& the
   }
 }
 
-//=======================================================================
-// function : parseJson
-// purpose  : Parse JSON object into topology/geometry structures
-//=======================================================================
 Standard_Boolean EzDesignJsonReader::parseJson(const json& theJson)
 {
   if (!theJson.is_object()) {
@@ -223,10 +207,6 @@ Standard_Boolean EzDesignJsonReader::parseJson(const json& theJson)
   return Standard_True;
 }
 
-//=======================================================================
-// function : parseVertex
-// purpose  : Parse vertex from JSON
-//=======================================================================
 Standard_Boolean EzDesignJsonReader::parseVertex(const json& theJson, int theId)
 {
   EzVertex vertex;
@@ -262,10 +242,6 @@ Standard_Boolean EzDesignJsonReader::parseVertex(const json& theJson, int theId)
   return Standard_True;
 }
 
-//=======================================================================
-// function : parseEdge
-// purpose  : Parse edge from JSON
-//=======================================================================
 Standard_Boolean EzDesignJsonReader::parseEdge(const json& theJson, int theId)
 {
   EzEdge edge;
@@ -291,10 +267,6 @@ Standard_Boolean EzDesignJsonReader::parseEdge(const json& theJson, int theId)
   return Standard_True;
 }
 
-//=======================================================================
-// function : parseHalfEdge
-// purpose  : Parse half-edge from JSON
-//=======================================================================
 Standard_Boolean EzDesignJsonReader::parseHalfEdge(const json& theJson, int theId)
 {
   EzHalfEdge halfEdge;
@@ -365,10 +337,6 @@ Standard_Boolean EzDesignJsonReader::parseHalfEdge(const json& theJson, int theI
   return Standard_True;
 }
 
-//=======================================================================
-// function : parseLoop
-// purpose  : Parse loop from JSON
-//=======================================================================
 Standard_Boolean EzDesignJsonReader::parseLoop(const json& theJson, int theId)
 {
   EzLoop loop;
@@ -405,10 +373,6 @@ Standard_Boolean EzDesignJsonReader::parseLoop(const json& theJson, int theId)
   return Standard_True;
 }
 
-//=======================================================================
-// function : parseFace
-// purpose  : Parse face from JSON
-//=======================================================================
 Standard_Boolean EzDesignJsonReader::parseFace(const json& theJson, int theId)
 {
   EzFace face;
@@ -472,10 +436,6 @@ Standard_Boolean EzDesignJsonReader::parseFace(const json& theJson, int theId)
   return Standard_True;
 }
 
-//=======================================================================
-// function : parseShell
-// purpose  : Parse shell from JSON
-//=======================================================================
 Standard_Boolean EzDesignJsonReader::parseShell(const json& theJson, int theId)
 {
   EzShell shell;
@@ -511,10 +471,6 @@ Standard_Boolean EzDesignJsonReader::parseShell(const json& theJson, int theId)
   return Standard_True;
 }
 
-//=======================================================================
-// function : parseBody
-// purpose  : Parse body from JSON
-//=======================================================================
 Standard_Boolean EzDesignJsonReader::parseBody(const json& theJson, int theId)
 {
   myBody.id = theId;
@@ -540,80 +496,21 @@ Standard_Boolean EzDesignJsonReader::parseBody(const json& theJson, int theId)
   return Standard_True;
 }
 
-//=======================================================================
-// function : parseCurveData
-// purpose  : Parse curve data from JSON
-//=======================================================================
 Standard_Boolean EzDesignJsonReader::parseCurveData(const json& theJson, EzCurveData& theCurveData)
 {
-  // Parse control_points
-  if (theJson.contains("control_points")) {
-    if (!parseControlPoints(theJson["control_points"], theCurveData.control_points)) {
-      return Standard_False;
-    }
-  }
-  else {
-    return Standard_False;
-  }
-
-  // Parse basis
-  if (theJson.contains("basis")) {
-    if (!parseBasis(theJson["basis"], theCurveData.basis)) {
-      return Standard_False;
-    }
-  }
-  else {
-    return Standard_False;
-  }
-
-  return Standard_True;
+  return theJson.contains("control_points") && theJson.contains("basis")
+      && parseControlPoints(theJson["control_points"], theCurveData.control_points)
+      && parseBasis(theJson["basis"], theCurveData.basis);
 }
 
-//=======================================================================
-// function : parseSurfaceData
-// purpose  : Parse surface data from JSON
-//=======================================================================
 Standard_Boolean EzDesignJsonReader::parseSurfaceData(const json& theJson, EzSurfaceData& theSurfaceData)
 {
-  // Parse control_points
-  if (theJson.contains("control_points")) {
-    if (!parseControlPoints(theJson["control_points"], theSurfaceData.control_points)) {
-      return Standard_False;
-    }
-  }
-  else {
-    return Standard_False;
-  }
-
-  // Parse u_basis
-  if (theJson.contains("u_basis")) {
-    if (!parseBasis(theJson["u_basis"], theSurfaceData.u_basis)) {
-      return Standard_False;
-    }
-  }
-  else {
-    return Standard_False;
-  }
-
-  // Parse v_basis
-  if (theJson.contains("v_basis")) {
-    if (!parseBasis(theJson["v_basis"], theSurfaceData.v_basis)) {
-      return Standard_False;
-    }
-  }
-  else {
-    return Standard_False;
-  }
-
-  // Note: is_normal_outward and trimming_loop are ignored per design decision
-
-  return Standard_True;
+  return theJson.contains("control_points") && theJson.contains("u_basis") && theJson.contains("v_basis")
+      && parseControlPoints(theJson["control_points"], theSurfaceData.control_points)
+      && parseBasis(theJson["u_basis"], theSurfaceData.u_basis)
+      && parseBasis(theJson["v_basis"], theSurfaceData.v_basis);
 }
 
-//=======================================================================
-// function : parseControlPoints
-// purpose  : Parse control points from JSON
-//=======================================================================
 Standard_Boolean EzDesignJsonReader::parseControlPoints(const json& theJson, EzControlPoints& theControlPoints)
 {
   // Parse data array
@@ -661,10 +558,6 @@ Standard_Boolean EzDesignJsonReader::parseControlPoints(const json& theJson, EzC
   return Standard_True;
 }
 
-//=======================================================================
-// function : parseBasis
-// purpose  : Parse basis from JSON
-//=======================================================================
 Standard_Boolean EzDesignJsonReader::parseBasis(const json& theJson, EzBasis& theBasis)
 {
   // Parse degree
@@ -698,19 +591,11 @@ Standard_Boolean EzDesignJsonReader::parseBasis(const json& theJson, EzBasis& th
   return Standard_True;
 }
 
-//=======================================================================
-// function : GetBody
-// purpose  : Get parsed body
-//=======================================================================
 const EzBody& EzDesignJsonReader::GetBody() const
 {
   return myBody;
 }
 
-//=======================================================================
-// function : GetVertex
-// purpose  : Get vertex by ID
-//=======================================================================
 const EzVertex& EzDesignJsonReader::GetVertex(int theId) const
 {
   static EzVertex empty;
@@ -721,10 +606,6 @@ const EzVertex& EzDesignJsonReader::GetVertex(int theId) const
   return empty;
 }
 
-//=======================================================================
-// function : GetEdge
-// purpose  : Get edge by ID
-//=======================================================================
 const EzEdge& EzDesignJsonReader::GetEdge(int theId) const
 {
   static EzEdge empty;
@@ -735,10 +616,6 @@ const EzEdge& EzDesignJsonReader::GetEdge(int theId) const
   return empty;
 }
 
-//=======================================================================
-// function : GetHalfEdge
-// purpose  : Get half-edge by ID
-//=======================================================================
 const EzHalfEdge& EzDesignJsonReader::GetHalfEdge(int theId) const
 {
   static EzHalfEdge empty;
@@ -749,10 +626,6 @@ const EzHalfEdge& EzDesignJsonReader::GetHalfEdge(int theId) const
   return empty;
 }
 
-//=======================================================================
-// function : GetLoop
-// purpose  : Get loop by ID
-//=======================================================================
 const EzLoop& EzDesignJsonReader::GetLoop(int theId) const
 {
   static EzLoop empty;
@@ -763,10 +636,6 @@ const EzLoop& EzDesignJsonReader::GetLoop(int theId) const
   return empty;
 }
 
-//=======================================================================
-// function : GetFace
-// purpose  : Get face by ID
-//=======================================================================
 const EzFace& EzDesignJsonReader::GetFace(int theId) const
 {
   static EzFace empty;
@@ -777,10 +646,6 @@ const EzFace& EzDesignJsonReader::GetFace(int theId) const
   return empty;
 }
 
-//=======================================================================
-// function : GetShell
-// purpose  : Get shell by ID
-//=======================================================================
 const EzShell& EzDesignJsonReader::GetShell(int theId) const
 {
   static EzShell empty;
@@ -791,11 +656,6 @@ const EzShell& EzDesignJsonReader::GetShell(int theId) const
   return empty;
 }
 
-//=======================================================================
-//=======================================================================
-// function : validateTopology
-// purpose  : Validate topology structure
-//=======================================================================
 Standard_Boolean EzDesignJsonReader::validateTopology()
 {
   // Create mutable copy for error collection
@@ -852,19 +712,11 @@ Standard_Boolean EzDesignJsonReader::validateTopology()
   return errors.empty() && myErrors.empty();
 }
 
-//=======================================================================
-// function : GetErrors
-// purpose  : Get validation errors
-//=======================================================================
 const std::vector<std::string>& EzDesignJsonReader::GetErrors() const
 {
   return myErrors;
 }
 
-//=======================================================================
-// function : addError
-// purpose  : Add validation error
-//=======================================================================
 void EzDesignJsonReader::addError(const std::string& theError)
 {
   myErrors.push_back(theError);
