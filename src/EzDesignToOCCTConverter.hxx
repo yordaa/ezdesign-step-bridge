@@ -67,10 +67,12 @@ private:
   TopoDS_Shape convertBody(const EzBody& theBody);
 
   // Helper methods
-  void computeKnotMultiplicities(
-    const std::vector<double>& theKnots,
+  bool buildKnotData(
+    const std::vector<double>& theKnotSequence,
     int theDegree,
-    TColStd_Array1OfInteger& theMultiplicities);
+    int thePoleCount,
+    std::vector<double>& theKnots,
+    std::vector<int>& theMultiplicities);
   TColgp_Array2OfPnt reshapeControlPoints3D(
     const std::vector<double>& theFlatData,
     int theNumU,
