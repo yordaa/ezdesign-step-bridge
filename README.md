@@ -1,8 +1,9 @@
-# ezd2step
+# ezdesign-step-bridge
 
-`ezd2step` converts proprietary EzDesign `.ezd` geometry files to STEP. This
+`ezdesign-step-bridge` builds the `ezd2step` CLI, which converts proprietary
+EzDesign `.ezd` geometry files to STEP. This
 repository owns the product source, version in `CMakeLists.txt`, release tags,
-tests, and binary releases.
+CLI contract, and behavior tests.
 
 OCCT and nlohmann-json are external dependencies installed by vcpkg. The
 shared registry supplies the minimal OCCT port; neither OCCT nor vcpkg is
@@ -17,30 +18,32 @@ cmake -S . -B build \
   -DCMAKE_TOOLCHAIN_FILE=/path/to/vcpkg/scripts/buildsystems/vcpkg.cmake \
   -DVCPKG_TARGET_TRIPLET=arm64-osx-dynamic \
   -DVCPKG_OVERLAY_TRIPLETS="$PWD/triplets" \
+  -DCMAKE_INSTALL_PREFIX="$PWD/build/vcpkg_installed/arm64-osx-dynamic" \
   -DCMAKE_BUILD_TYPE=Release
 cmake --build build --config Release
+cmake --install build --config Release
 ctest --test-dir build -C Release --output-on-failure
 ```
 
-On Windows x64, omit the overlay and use
-`-DVCPKG_TARGET_TRIPLET=x64-windows`.
+On Windows x64, use `-DVCPKG_TARGET_TRIPLET=x64-windows-release` and the
+matching install prefix.
 
 ```sh
-build/ezd2step input.ezd output.step
+build/vcpkg_installed/arm64-osx-dynamic/bin/ezd2step input.ezd output.step
 ```
 
 ## Release
 
-Tags named `v<version>` are the version authority and must match the version in
-`CMakeLists.txt`. The release workflow builds macOS arm64 and Windows x64
-bundles and publishes them to the matching GitHub release.
+Tags named `v<version>` are the version authority and must match the versions in
+`CMakeLists.txt` and `vcpkg.json`. Tagged source archives are the release artifact.
 
 ## Registry
 
-Source builds and binary consumers use the separate public
+Source builds use the separate public
 [`yordaa/ezdesign-vcpkg-registry`](https://github.com/yordaa/ezdesign-vcpkg-registry)
 Git registry. This repository selects its OCCT port through
-`vcpkg-configuration.json`; the registry consumer example selects ezd2step.
+`vcpkg-configuration.json`; the registry consumer package is named
+`ezdesign-step-bridge`.
 
 ## Migration
 
@@ -51,5 +54,5 @@ a maintained repository.
 
 ## License
 
-The ezd2step source is proprietary. See `LICENSE` and `NOTICE`. Distributed
+The ezdesign-step-bridge source is proprietary. See `LICENSE` and `NOTICE`. Distributed
 OCCT libraries remain subject to OCCT's LGPL-2.1 terms.

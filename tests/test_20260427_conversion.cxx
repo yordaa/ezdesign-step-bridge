@@ -15,11 +15,8 @@
 #include <TopExp_Explorer.hxx>
 #include <TopoDS_Shape.hxx>
 
-#include "ezd_to_step.h"
-
 #include <filesystem>
 #include <iostream>
-#include <string>
 
 namespace
 {
@@ -32,42 +29,16 @@ int countShapes(const TopoDS_Shape& theShape, TopAbs_ShapeEnum theType)
   return aCount;
 }
 
-std::filesystem::path executableDirectory(const char* theExecutablePath)
-{
-  const std::filesystem::path aPath(theExecutablePath);
-  if (aPath.has_parent_path()) {
-    return aPath.parent_path();
-  }
-
-  return std::filesystem::current_path();
-}
 }
 
 int main(int argc, char* argv[])
 {
-  const std::filesystem::path anInputPath = argc > 1
-    ? std::filesystem::path(argv[1])
-    : executableDirectory(argv[0]) / "20260427.ezd";
-  const std::filesystem::path anOutputPath =
-    std::filesystem::temp_directory_path() / "ezd2step-20260427-conversion.step";
-
-  if (!std::filesystem::exists(anInputPath)) {
-    std::cerr << "ERROR: EZD fixture does not exist: " << anInputPath << std::endl;
+  if (argc != 2) {
+    std::cerr << "Usage: " << argv[0] << " <generated.step>" << std::endl;
     return 1;
   }
 
-  std::filesystem::remove(anOutputPath);
-
-  ezd_to_step_options anOptions = {0, nullptr};
-  std::cout << "Converting " << anInputPath << std::endl;
-  const int aConversionResult = ezd_to_step(
-    anInputPath.string().c_str(),
-    anOutputPath.string().c_str(),
-    &anOptions);
-  if (aConversionResult != 0) {
-    std::cerr << "ERROR: ezd2step conversion failed with status " << aConversionResult << std::endl;
-    return 1;
-  }
+  const std::filesystem::path anOutputPath(argv[1]);
 
   if (!std::filesystem::exists(anOutputPath)) {
     std::cerr << "ERROR: STEP output was not created: " << anOutputPath << std::endl;
@@ -123,6 +94,6 @@ int main(int argc, char* argv[])
   }
 
   std::filesystem::remove(anOutputPath);
-  std::cout << "20260427.ezd conversion test passed" << std::endl;
+  std::cout << "Generated STEP geometry validation passed" << std::endl;
   return 0;
 }
