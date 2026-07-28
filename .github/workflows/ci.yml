@@ -52,5 +52,5 @@ jobs:
           $dumpbin = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -find "VC\Tools\MSVC\**\bin\Hostx64\x64\dumpbin.exe" | Select-Object -First 1
           if (-not $dumpbin) { throw "dumpbin.exe not found" }
           $dependencies = & $dumpbin /dependents "build\vcpkg_installed\${{ matrix.triplet }}\bin\ezd2step.exe"
-          if ($dependencies -notmatch "TKDESTEP.*\.dll") { throw "ezd2step is not dynamically linked to TKDESTEP" }
+          if (-not ($dependencies -match "TKDESTEP.*\.dll")) { throw "ezd2step is not dynamically linked to TKDESTEP" }
           $dependencies
