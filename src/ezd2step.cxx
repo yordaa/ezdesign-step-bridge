@@ -25,15 +25,6 @@
 #include <string>
 
 // Version definitions (from CMake)
-#ifndef EZD2STEP_VERSION_MAJOR
-#define EZD2STEP_VERSION_MAJOR 1
-#endif
-#ifndef EZD2STEP_VERSION_MINOR
-#define EZD2STEP_VERSION_MINOR 0
-#endif
-#ifndef EZD2STEP_VERSION_PATCH
-#define EZD2STEP_VERSION_PATCH 0
-#endif
 #ifndef EZD2STEP_VERSION
 #define EZD2STEP_VERSION "1.0.0"
 #endif
@@ -266,4 +257,3 @@ int main(int argc, char* argv[])
     return 4;
   }
 }
-

@@ -25,13 +25,10 @@
 #include <gp_Pnt.hxx>
 #include <gp_Pnt2d.hxx>
 #include <TColgp_Array1OfPnt.hxx>
-#include <TColgp_HArray1OfPnt.hxx>
 #include <TColgp_Array1OfPnt2d.hxx>
 #include <TColgp_Array2OfPnt.hxx>
 #include <TColStd_Array1OfReal.hxx>
-#include <TColStd_HArray1OfReal.hxx>
 #include <TColStd_Array1OfInteger.hxx>
-#include <GeomAPI_Interpolate.hxx>
 #include <GeomAPI_ProjectPointOnSurf.hxx>
 #include <Geom2d_Line.hxx>
 #include <gp_Vec2d.hxx>
@@ -96,7 +93,7 @@ TopoDS_Shape EzDesignToOCCTConverter::convertBody(const EzBody& theBody)
 
   if (theBody.shell_ids.size() == 1) {
     // Single shell - try to make solid
-    const EzShell& shell = getShell(theBody.shell_ids[0]);
+    const EzShell& shell = myReader.GetShell(theBody.shell_ids[0]);
     TopoDS_Shell occtShell = convertShell(shell);
 
     if (occtShell.IsNull()) {
@@ -121,7 +118,7 @@ TopoDS_Shape EzDesignToOCCTConverter::convertBody(const EzBody& theBody)
     builder.MakeCompound(compound);
 
     for (int shellId : theBody.shell_ids) {
-      const EzShell& shell = getShell(shellId);
+      const EzShell& shell = myReader.GetShell(shellId);
       TopoDS_Shell occtShell = convertShell(shell);
       if (!occtShell.IsNull()) {
         builder.Add(compound, occtShell);
@@ -144,7 +141,7 @@ TopoDS_Shell EzDesignToOCCTConverter::convertShell(const EzShell& theShell)
 
   // Convert and add all faces
   for (int faceId : theShell.face_ids) {
-    const EzFace& face = getFace(faceId);
+    const EzFace& face = myReader.GetFace(faceId);
     TopoDS_Face occtFace = convertFace(face);
 
     if (!occtFace.IsNull()) {
@@ -178,7 +175,7 @@ TopoDS_Face EzDesignToOCCTConverter::convertFace(const EzFace& theFace)
   
   bool isFirstLoop = true;
   for (int loopId : theFace.loop_ids) {
-    const EzLoop& loop = getLoop(loopId);
+    const EzLoop& loop = myReader.GetLoop(loopId);
     TopoDS_Wire wire = convertLoop(loop, surface, theFace.is_surface_normal_same);
 
     if (wire.IsNull()) {
@@ -246,7 +243,7 @@ TopoDS_Wire EzDesignToOCCTConverter::convertLoop(
       return TopoDS_Wire();
     }
 
-    const EzHalfEdge& halfEdge = getHalfEdge(currentHeId);
+    const EzHalfEdge& halfEdge = myReader.GetHalfEdge(currentHeId);
     if (halfEdge.id == 0) {
       addError("Loop " + std::to_string(theLoop.id) + ": Half-edge " + std::to_string(currentHeId) + " not found");
       return TopoDS_Wire();
@@ -314,20 +311,20 @@ TopoDS_Edge EzDesignToOCCTConverter::convertHalfEdge(
 
   // 1. Get start and end vertices
   // vertex_id is the vertex this half-edge points to (end vertex)
-  const EzVertex& endVertex = getVertex(theHalfEdge.vertex_id);
+  const EzVertex& endVertex = myReader.GetVertex(theHalfEdge.vertex_id);
   if (endVertex.id == 0) {
     addError("HalfEdge " + std::to_string(theHalfEdge.id) + ": End vertex " + std::to_string(theHalfEdge.vertex_id) + " not found");
     return TopoDS_Edge();
   }
 
   // Start vertex is the vertex the previous half-edge points to
-  const EzHalfEdge& previousHalfEdge = getHalfEdge(theHalfEdge.previous_id);
+  const EzHalfEdge& previousHalfEdge = myReader.GetHalfEdge(theHalfEdge.previous_id);
   if (previousHalfEdge.id == 0) {
     addError("HalfEdge " + std::to_string(theHalfEdge.id) + ": Previous half-edge not found");
     return TopoDS_Edge();
   }
 
-  const EzVertex& startVertex = getVertex(previousHalfEdge.vertex_id);
+  const EzVertex& startVertex = myReader.GetVertex(previousHalfEdge.vertex_id);
   if (startVertex.id == 0) {
     addError("HalfEdge " + std::to_string(theHalfEdge.id) + ": Start vertex " + std::to_string(previousHalfEdge.vertex_id) + " not found");
     return TopoDS_Edge();
@@ -424,7 +421,7 @@ void EzDesignToOCCTConverter::addPCurveToEdge(
 
   // If no curve_data, try opposite half-edge
   if (!hasCurveData && theHalfEdge.opposite_id != 0) {
-    const EzHalfEdge& oppositeHe = getHalfEdge(theHalfEdge.opposite_id);
+    const EzHalfEdge& oppositeHe = myReader.GetHalfEdge(theHalfEdge.opposite_id);
     if (oppositeHe.id != 0 && !oppositeHe.curve_data.control_points.data.empty() &&
         oppositeHe.curve_data.control_points.number_v_points >= 2) {
       curveData = oppositeHe.curve_data;
@@ -841,69 +838,6 @@ Handle(Geom2d_BSplineCurve) EzDesignToOCCTConverter::convertCurve2D(const EzCurv
 }
 
 //=======================================================================
-// function : convertCurve3D
-// purpose  : Map 2D curve to 3D space via surface evaluation
-//=======================================================================
-Handle(Geom_BSplineCurve) EzDesignToOCCTConverter::convertCurve3D(
-  const Handle(Geom2d_BSplineCurve)& theCurve2d,
-  const Handle(Geom_BSplineSurface)& theSurface,
-  double theUMin,
-  double theUMax)
-{
-  // Use adaptive sampling based on curve complexity
-  int numSamples = computeSampleCount(theCurve2d);
-  if (numSamples < 2) {
-    numSamples = 20;  // Minimum samples
-  }
-
-  // Sample 2D curve and evaluate on surface
-  Handle(TColgp_HArray1OfPnt) points3d = new TColgp_HArray1OfPnt(1, numSamples);
-  Handle(TColStd_HArray1OfReal) parameters = new TColStd_HArray1OfReal(1, numSamples);
-
-  for (int i = 0; i < numSamples; i++) {
-    double t = theUMin + (theUMax - theUMin) * i / (numSamples - 1.0);
-    parameters->SetValue(i + 1, t);
-    gp_Pnt2d p2d = theCurve2d->Value(t);
-    gp_Pnt p3d = theSurface->Value(p2d.X(), p2d.Y());
-    points3d->SetValue(i + 1, p3d);
-  }
-
-  // Create 3D B-spline curve from sampled points using interpolation
-  // Use degree 3 for smooth curves
-  GeomAPI_Interpolate interpolator(points3d, parameters, Standard_False, Precision::Confusion());
-  interpolator.Perform();
-
-  if (!interpolator.IsDone()) {
-    // Fallback: create degree 1 (linear) curve
-    // Ensure we have at least 2 points
-    if (numSamples < 2) {
-      addError("Insufficient samples for 3D curve creation: " + std::to_string(numSamples));
-      return Handle(Geom_BSplineCurve)();
-    }
-    
-    TColgp_Array1OfPnt poles3d(1, numSamples);
-    for (int i = 1; i <= numSamples; i++) {
-      poles3d.SetValue(i, points3d->Value(i));
-    }
-    TColStd_Array1OfReal knots3d(1, numSamples);
-    TColStd_Array1OfInteger mults3d(1, numSamples);
-    for (int i = 1; i <= numSamples; i++) {
-      knots3d.SetValue(i, (i - 1.0) / (numSamples - 1.0));
-      mults3d.SetValue(i, (i == 1 || i == numSamples) ? 2 : 1);
-    }
-    return new Geom_BSplineCurve(poles3d, knots3d, mults3d, 1);
-  }
-
-  Handle(Geom_BSplineCurve) result = interpolator.Curve();
-  if (result.IsNull() || result->NbPoles() < 2) {
-    addError("Interpolated 3D curve has insufficient poles: " + 
-             (result.IsNull() ? std::string("null") : std::to_string(result->NbPoles())));
-    return Handle(Geom_BSplineCurve)();
-  }
-  return result;
-}
-
-//=======================================================================
 // function : computeKnotMultiplicities
 // purpose  : Compute knot multiplicities from knot vector
 //=======================================================================
@@ -1058,104 +992,6 @@ TColgp_Array1OfPnt2d EzDesignToOCCTConverter::reshapeControlPoints2D(
 }
 
 //=======================================================================
-// function : computeSampleCount
-// purpose  : Compute adaptive sample count based on curve complexity
-//=======================================================================
-int EzDesignToOCCTConverter::computeSampleCount(const Handle(Geom2d_BSplineCurve)& theCurve2d)
-{
-  if (theCurve2d.IsNull()) {
-    return 20;  // Default
-  }
-
-  // Base sample count on degree and number of control points
-  int degree = theCurve2d->Degree();
-  int numPoles = theCurve2d->NbPoles();
-
-  // Adaptive sampling: more samples for higher degree/complexity
-  int baseSamples = 20;
-  int additionalSamples = degree * 2 + (numPoles / 5);
-  int totalSamples = baseSamples + additionalSamples;
-
-  // Clamp between 20 and 100
-  if (totalSamples < 20) {
-    totalSamples = 20;
-  }
-  if (totalSamples > 100) {
-    totalSamples = 100;
-  }
-
-  return totalSamples;
-}
-
-//=======================================================================
-// function : getVertex
-// purpose  : Get vertex by ID
-//=======================================================================
-const EzVertex& EzDesignToOCCTConverter::getVertex(int theId) const
-{
-  return myReader.GetVertex(theId);
-}
-
-//=======================================================================
-// function : getEdge
-// purpose  : Get edge by ID
-//=======================================================================
-const EzEdge& EzDesignToOCCTConverter::getEdge(int theId) const
-{
-  return myReader.GetEdge(theId);
-}
-
-//=======================================================================
-// function : getHalfEdge
-// purpose  : Get half-edge by ID
-//=======================================================================
-const EzHalfEdge& EzDesignToOCCTConverter::getHalfEdge(int theId) const
-{
-  return myReader.GetHalfEdge(theId);
-}
-
-//=======================================================================
-// function : getLoop
-// purpose  : Get loop by ID
-//=======================================================================
-const EzLoop& EzDesignToOCCTConverter::getLoop(int theId) const
-{
-  return myReader.GetLoop(theId);
-}
-
-//=======================================================================
-// function : getFace
-// purpose  : Get face by ID
-//=======================================================================
-const EzFace& EzDesignToOCCTConverter::getFace(int theId) const
-{
-  return myReader.GetFace(theId);
-}
-
-//=======================================================================
-// function : getShell
-// purpose  : Get shell by ID
-//=======================================================================
-const EzShell& EzDesignToOCCTConverter::getShell(int theId) const
-{
-  return myReader.GetShell(theId);
-}
-
-//=======================================================================
-// function : getNextHalfEdge
-// purpose  : Get next half-edge in chain
-//=======================================================================
-const EzHalfEdge& EzDesignToOCCTConverter::getNextHalfEdge(int theId) const
-{
-  const EzHalfEdge& he = getHalfEdge(theId);
-  if (he.id == 0) {
-    static EzHalfEdge empty;
-    return empty;
-  }
-  return getHalfEdge(he.next_id);
-}
-
-//=======================================================================
 // function : HasErrors
 // purpose  : Check for errors
 //=======================================================================
@@ -1181,4 +1017,3 @@ void EzDesignToOCCTConverter::addError(const std::string& theError)
 {
   myErrors.push_back(theError);
 }
-

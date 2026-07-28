@@ -8,13 +8,12 @@ find_package(nlohmann_json CONFIG REQUIRED)
 
 set(EZD2STEP_LIBRARIES
   nlohmann_json::nlohmann_json
-  TKDESTEP TKXSBase TKDE TKBRep TKTopAlgo TKGeomAlgo
-  TKGeomBase TKG3d TKG2d TKMath TKernel
+  TKDESTEP
 )
 
 function(ezd2step_target target)
   target_compile_features(${target} PRIVATE cxx_std_17)
-  target_include_directories(${target} PRIVATE src include)
+  target_include_directories(${target} PRIVATE src)
   target_link_libraries(${target} PRIVATE ${EZD2STEP_LIBRARIES})
 endfunction()
 
@@ -25,9 +24,6 @@ add_executable(ezd2step
 )
 ezd2step_target(ezd2step)
 target_compile_definitions(ezd2step PRIVATE
-  EZD2STEP_VERSION_MAJOR=${PROJECT_VERSION_MAJOR}
-  EZD2STEP_VERSION_MINOR=${PROJECT_VERSION_MINOR}
-  EZD2STEP_VERSION_PATCH=${PROJECT_VERSION_PATCH}
   EZD2STEP_VERSION="${PROJECT_VERSION}"
 )
 
