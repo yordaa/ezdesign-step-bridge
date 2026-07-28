@@ -49,6 +49,13 @@ if(BUILD_TESTING)
   )
   ezd2step_target(test_20260427_conversion)
 
+  add_executable(test_knot_validation
+    tests/test_knot_validation.cxx
+    src/EzDesignJsonReader.cxx
+    src/EzDesignToOCCTConverter.cxx
+  )
+  ezd2step_target(test_knot_validation)
+
   add_test(NAME json_reader_entities_schema
     COMMAND test_json_reader_entities_schema
   )
@@ -64,5 +71,8 @@ if(BUILD_TESTING)
   )
   set_tests_properties(conversion_20260427_geometry PROPERTIES
     DEPENDS installed_cli_conversion_20260427
+  )
+  add_test(NAME knot_validation
+    COMMAND test_knot_validation "${CMAKE_CURRENT_SOURCE_DIR}/tests/data/20260427.ezd"
   )
 endif()
