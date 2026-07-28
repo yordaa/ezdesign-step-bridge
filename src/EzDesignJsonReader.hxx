@@ -9,14 +9,11 @@
 #ifndef _EzDesignJsonReader_HeaderFile
 #define _EzDesignJsonReader_HeaderFile
 
-#include <Standard.hxx>
-#include <Standard_DefineAlloc.hxx>
-#include <Standard_Handle.hxx>
-#include <TCollection_AsciiString.hxx>
 #include "EzDesignTypes.hxx"
 #include <vector>
 #include <map>
 #include <string>
+#include <filesystem>
 
 // Include nlohmann/json - it's header-only so safe to include in header
 // The include path is set by CMakeLists.txt
@@ -27,83 +24,81 @@
 class EzDesignJsonReader
 {
 public:
-  DEFINE_STANDARD_ALLOC
-
   //! Constructor
-  Standard_EXPORT EzDesignJsonReader();
+  EzDesignJsonReader();
 
   //! Destructor
-  Standard_EXPORT ~EzDesignJsonReader();
+  ~EzDesignJsonReader();
 
   //! Read JSON file and parse topology/geometry data
-  Standard_EXPORT Standard_Boolean ReadFile(const TCollection_AsciiString& theFileName);
+  bool ReadFile(const std::filesystem::path& theFileName);
 
   //! Get parsed body
-  Standard_EXPORT const EzBody& GetBody() const;
+  const EzBody& GetBody() const;
 
   //! Get vertex by ID
-  Standard_EXPORT const EzVertex& GetVertex(int theId) const;
+  const EzVertex& GetVertex(int theId) const;
 
   //! Get edge by ID
-  Standard_EXPORT const EzEdge& GetEdge(int theId) const;
+  const EzEdge& GetEdge(int theId) const;
 
   //! Get half-edge by ID
-  Standard_EXPORT const EzHalfEdge& GetHalfEdge(int theId) const;
+  const EzHalfEdge& GetHalfEdge(int theId) const;
 
   //! Get loop by ID
-  Standard_EXPORT const EzLoop& GetLoop(int theId) const;
+  const EzLoop& GetLoop(int theId) const;
 
   //! Get face by ID
-  Standard_EXPORT const EzFace& GetFace(int theId) const;
+  const EzFace& GetFace(int theId) const;
 
   //! Get shell by ID
-  Standard_EXPORT const EzShell& GetShell(int theId) const;
+  const EzShell& GetShell(int theId) const;
 
   //! Get validation errors
-  Standard_EXPORT const std::vector<std::string>& GetErrors() const;
+  const std::vector<std::string>& GetErrors() const;
 
 private:
   //! Parse JSON object into topology/geometry structures
-  Standard_Boolean parseJson(const nlohmann::json& theJson);
+  bool parseJson(const nlohmann::json& theJson);
 
   //! Parse vertex from JSON
-  Standard_Boolean parseVertex(const nlohmann::json& theJson, int theId);
+  bool parseVertex(const nlohmann::json& theJson, int theId);
 
   //! Parse edge from JSON
-  Standard_Boolean parseEdge(const nlohmann::json& theJson, int theId);
+  bool parseEdge(const nlohmann::json& theJson, int theId);
 
   //! Parse half-edge from JSON
-  Standard_Boolean parseHalfEdge(const nlohmann::json& theJson, int theId);
+  bool parseHalfEdge(const nlohmann::json& theJson, int theId);
 
   //! Parse loop from JSON
-  Standard_Boolean parseLoop(const nlohmann::json& theJson, int theId);
+  bool parseLoop(const nlohmann::json& theJson, int theId);
 
   //! Parse face from JSON
-  Standard_Boolean parseFace(const nlohmann::json& theJson, int theId);
+  bool parseFace(const nlohmann::json& theJson, int theId);
 
   //! Parse shell from JSON
-  Standard_Boolean parseShell(const nlohmann::json& theJson, int theId);
+  bool parseShell(const nlohmann::json& theJson, int theId);
 
   //! Parse body from JSON
-  Standard_Boolean parseBody(const nlohmann::json& theJson, int theId);
+  bool parseBody(const nlohmann::json& theJson, int theId);
 
   //! Parse curve data from JSON
-  Standard_Boolean parseCurveData(const nlohmann::json& theJson, EzCurveData& theCurveData);
+  bool parseCurveData(const nlohmann::json& theJson, EzCurveData& theCurveData);
 
   //! Parse surface data from JSON
-  Standard_Boolean parseSurfaceData(const nlohmann::json& theJson, EzSurfaceData& theSurfaceData);
+  bool parseSurfaceData(const nlohmann::json& theJson, EzSurfaceData& theSurfaceData);
 
   //! Parse control points from JSON
-  Standard_Boolean parseControlPoints(const nlohmann::json& theJson, EzControlPoints& theControlPoints);
+  bool parseControlPoints(const nlohmann::json& theJson, EzControlPoints& theControlPoints);
 
   //! Parse basis from JSON
-  Standard_Boolean parseBasis(const nlohmann::json& theJson, EzBasis& theBasis);
+  bool parseBasis(const nlohmann::json& theJson, EzBasis& theBasis);
 
   //! Add validation error
   void addError(const std::string& theError);
 
   //! Validate topology structure
-  Standard_Boolean validateTopology();
+  bool validateTopology();
 
 private:
   EzBody myBody;

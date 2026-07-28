@@ -35,7 +35,7 @@ void printErrors(const EzDesignJsonReader& theReader)
   }
 }
 
-bool expect(Standard_Boolean theCondition, const std::string& theMessage)
+bool expect(bool theCondition, const std::string& theMessage)
 {
   if (!theCondition) {
     std::cerr << "FAIL: " << theMessage << std::endl;
@@ -130,13 +130,13 @@ bool testEntitiesSchemaParsesReferenceIds()
   }
 
   EzDesignJsonReader aReader;
-  const Standard_Boolean isRead = aReader.ReadFile(aPath.c_str());
+  const bool isRead = aReader.ReadFile(aPath);
   std::remove(aPath.c_str());
 
   if (!isRead) {
     std::cerr << "Reader errors for entities schema:" << std::endl;
     printErrors(aReader);
-    return expect(Standard_False, "data.db.entities schema should parse successfully");
+    return expect(false, "data.db.entities schema should parse successfully");
   }
 
   bool isOk = true;
@@ -185,11 +185,11 @@ bool testLegacyBodiesWrapperIsRejected()
   }
 
   EzDesignJsonReader aReader;
-  const Standard_Boolean isRead = aReader.ReadFile(aPath.c_str());
+  const bool isRead = aReader.ReadFile(aPath);
   std::remove(aPath.c_str());
 
   if (isRead) {
-    return expect(Standard_False, "legacy data.db.bodies wrapper should be rejected");
+    return expect(false, "legacy data.db.bodies wrapper should be rejected");
   }
 
   bool foundEntitiesError = false;

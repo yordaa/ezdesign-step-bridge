@@ -8,9 +8,8 @@
 
 #include "EzDesignJsonReader.hxx"
 
-#include <Standard_Failure.hxx>
-#include <Standard_ErrorHandler.hxx>
 #include <fstream>
+#include <filesystem>
 #include <sstream>
 
 // Include nlohmann/json
@@ -30,7 +29,7 @@ EzDesignJsonReader::~EzDesignJsonReader()
 {
 }
 
-Standard_Boolean EzDesignJsonReader::ReadFile(const TCollection_AsciiString& theFileName)
+bool EzDesignJsonReader::ReadFile(const std::filesystem::path& theFileName)
 {
   myErrors.clear();
   myVertices.clear();
@@ -42,13 +41,12 @@ Standard_Boolean EzDesignJsonReader::ReadFile(const TCollection_AsciiString& the
   myBody = EzBody();
 
   try {
-    OCC_CATCH_SIGNALS
 
     // Read JSON file
-    std::ifstream file(theFileName.ToCString());
+    std::ifstream file(theFileName.string().c_str());
     if (!file.is_open()) {
-      addError("Cannot open file: " + std::string(theFileName.ToCString()));
-      return Standard_False;
+      addError("Cannot open file: " + std::string(theFileName.string().c_str()));
+      return false;
     }
 
     json jsonData;
@@ -76,19 +74,19 @@ Standard_Boolean EzDesignJsonReader::ReadFile(const TCollection_AsciiString& the
           // Reject if version < 0.1.0
           if (major == 0 && minor < 1) {
             addError("Document version " + versionStr + " is too old. Minimum required version is 0.1.0");
-            return Standard_False;
+            return false;
           }
         }
         catch (...) {
           // If version parsing fails, assume it's invalid and reject
           addError("Invalid document version format: " + versionStr + ". Minimum required version is 0.1.0");
-          return Standard_False;
+          return false;
         }
       }
       else {
         // Version string doesn't contain dots, assume invalid
         addError("Invalid document version format: " + versionStr + ". Minimum required version is 0.1.0");
-        return Standard_False;
+        return false;
       }
     }
 
@@ -101,46 +99,42 @@ Standard_Boolean EzDesignJsonReader::ReadFile(const TCollection_AsciiString& the
     }
     else {
       addError("Invalid document structure: missing 'data.db.entities' field");
-      return Standard_False;
+      return false;
     }
 
     // Parse JSON
     if (!parseJson(dataToParse)) {
-      return Standard_False;
+      return false;
     }
 
     // Validate parsed data
     if (!validateTopology()) {
-      return Standard_False;
+      return false;
     }
 
-    return Standard_True;
+    return true;
   }
   catch (const json::parse_error& e) {
     std::ostringstream oss;
     oss << "JSON parse error at byte " << e.byte << ": " << e.what();
     addError(oss.str());
-    return Standard_False;
-  }
-  catch (const Standard_Failure& e) {
-    addError(std::string("OCCT exception: ") + e.GetMessageString());
-    return Standard_False;
+    return false;
   }
   catch (const std::exception& e) {
     addError(std::string("Standard exception: ") + e.what());
-    return Standard_False;
+    return false;
   }
   catch (...) {
     addError("Unknown exception occurred");
-    return Standard_False;
+    return false;
   }
 }
 
-Standard_Boolean EzDesignJsonReader::parseJson(const json& theJson)
+bool EzDesignJsonReader::parseJson(const json& theJson)
 {
   if (!theJson.is_object()) {
     addError("JSON root must be an object");
-    return Standard_False;
+    return false;
   }
 
   // Iterate through all objects in JSON
@@ -204,10 +198,10 @@ Standard_Boolean EzDesignJsonReader::parseJson(const json& theJson)
     }
   }
 
-  return Standard_True;
+  return true;
 }
 
-Standard_Boolean EzDesignJsonReader::parseVertex(const json& theJson, int theId)
+bool EzDesignJsonReader::parseVertex(const json& theJson, int theId)
 {
   EzVertex vertex;
   vertex.id = theId;
@@ -215,7 +209,7 @@ Standard_Boolean EzDesignJsonReader::parseVertex(const json& theJson, int theId)
   // Check for data wrapper
   if (!theJson.contains("data") || !theJson["data"].is_object()) {
     addError("Vertex " + std::to_string(theId) + " missing 'data' field");
-    return Standard_False;
+    return false;
   }
   const json& data = theJson["data"];
 
@@ -227,7 +221,7 @@ Standard_Boolean EzDesignJsonReader::parseVertex(const json& theJson, int theId)
   }
   else {
     addError("Vertex " + std::to_string(theId) + " missing or invalid 'data.position' field");
-    return Standard_False;
+    return false;
   }
 
   // Parse half_edge_id (optional)
@@ -239,10 +233,10 @@ Standard_Boolean EzDesignJsonReader::parseVertex(const json& theJson, int theId)
   }
 
   myVertices[theId] = vertex;
-  return Standard_True;
+  return true;
 }
 
-Standard_Boolean EzDesignJsonReader::parseEdge(const json& theJson, int theId)
+bool EzDesignJsonReader::parseEdge(const json& theJson, int theId)
 {
   EzEdge edge;
   edge.id = theId;
@@ -250,7 +244,7 @@ Standard_Boolean EzDesignJsonReader::parseEdge(const json& theJson, int theId)
   // Check for data wrapper
   if (!theJson.contains("data") || !theJson["data"].is_object()) {
     addError("Edge " + std::to_string(theId) + " missing 'data' field");
-    return Standard_False;
+    return false;
   }
   const json& data = theJson["data"];
 
@@ -260,14 +254,14 @@ Standard_Boolean EzDesignJsonReader::parseEdge(const json& theJson, int theId)
   }
   else {
     addError("Edge " + std::to_string(theId) + " missing 'data.half_edge_id' field");
-    return Standard_False;
+    return false;
   }
 
   myEdges[theId] = edge;
-  return Standard_True;
+  return true;
 }
 
-Standard_Boolean EzDesignJsonReader::parseHalfEdge(const json& theJson, int theId)
+bool EzDesignJsonReader::parseHalfEdge(const json& theJson, int theId)
 {
   EzHalfEdge halfEdge;
   halfEdge.id = theId;
@@ -275,7 +269,7 @@ Standard_Boolean EzDesignJsonReader::parseHalfEdge(const json& theJson, int theI
   // Check for data wrapper
   if (!theJson.contains("data") || !theJson["data"].is_object()) {
     addError("HalfEdge " + std::to_string(theId) + " missing 'data' field");
-    return Standard_False;
+    return false;
   }
   const json& data = theJson["data"];
 
@@ -285,7 +279,7 @@ Standard_Boolean EzDesignJsonReader::parseHalfEdge(const json& theJson, int theI
   }
   else {
     addError("HalfEdge " + std::to_string(theId) + " missing 'data.edge_id' field");
-    return Standard_False;
+    return false;
   }
 
   if (data.contains("vertex_id")) {
@@ -293,7 +287,7 @@ Standard_Boolean EzDesignJsonReader::parseHalfEdge(const json& theJson, int theI
   }
   else {
     addError("HalfEdge " + std::to_string(theId) + " missing 'data.vertex_id' field");
-    return Standard_False;
+    return false;
   }
 
   if (data.contains("loop_id")) {
@@ -308,7 +302,7 @@ Standard_Boolean EzDesignJsonReader::parseHalfEdge(const json& theJson, int theI
   }
   else {
     addError("HalfEdge " + std::to_string(theId) + " missing 'data.next_id' field");
-    return Standard_False;
+    return false;
   }
 
   if (data.contains("previous_id")) {
@@ -334,10 +328,10 @@ Standard_Boolean EzDesignJsonReader::parseHalfEdge(const json& theJson, int theI
   }
 
   myHalfEdges[theId] = halfEdge;
-  return Standard_True;
+  return true;
 }
 
-Standard_Boolean EzDesignJsonReader::parseLoop(const json& theJson, int theId)
+bool EzDesignJsonReader::parseLoop(const json& theJson, int theId)
 {
   EzLoop loop;
   loop.id = theId;
@@ -345,7 +339,7 @@ Standard_Boolean EzDesignJsonReader::parseLoop(const json& theJson, int theId)
   // Check for data wrapper
   if (!theJson.contains("data") || !theJson["data"].is_object()) {
     addError("Loop " + std::to_string(theId) + " missing 'data' field");
-    return Standard_False;
+    return false;
   }
   const json& data = theJson["data"];
 
@@ -358,7 +352,7 @@ Standard_Boolean EzDesignJsonReader::parseLoop(const json& theJson, int theId)
   }
   else {
     addError("Loop " + std::to_string(theId) + " missing 'data.face_id' or Face owner_id field");
-    return Standard_False;
+    return false;
   }
 
   if (data.contains("half_edge_id")) {
@@ -366,14 +360,14 @@ Standard_Boolean EzDesignJsonReader::parseLoop(const json& theJson, int theId)
   }
   else {
     addError("Loop " + std::to_string(theId) + " missing 'data.half_edge_id' field");
-    return Standard_False;
+    return false;
   }
 
   myLoops[theId] = loop;
-  return Standard_True;
+  return true;
 }
 
-Standard_Boolean EzDesignJsonReader::parseFace(const json& theJson, int theId)
+bool EzDesignJsonReader::parseFace(const json& theJson, int theId)
 {
   EzFace face;
   face.id = theId;
@@ -381,7 +375,7 @@ Standard_Boolean EzDesignJsonReader::parseFace(const json& theJson, int theId)
   // Check for data wrapper
   if (!theJson.contains("data") || !theJson["data"].is_object()) {
     addError("Face " + std::to_string(theId) + " missing 'data' field");
-    return Standard_False;
+    return false;
   }
   const json& data = theJson["data"];
 
@@ -394,7 +388,7 @@ Standard_Boolean EzDesignJsonReader::parseFace(const json& theJson, int theId)
   }
   else {
     addError("Face " + std::to_string(theId) + " missing 'data.shell_id' field");
-    return Standard_False;
+    return false;
   }
 
   // Parse loop_ids
@@ -405,20 +399,20 @@ Standard_Boolean EzDesignJsonReader::parseFace(const json& theJson, int theId)
   }
   else {
     addError("Face " + std::to_string(theId) + " missing or invalid 'data.loop_ids' field");
-    return Standard_False;
+    return false;
   }
 
   // Parse surface_data (required for regular faces, optional for subdivision faces)
   if (data.contains("surface_data")) {
     if (!parseSurfaceData(data["surface_data"], face.surface_data)) {
       addError("Face " + std::to_string(theId) + " has invalid 'data.surface_data'");
-      return Standard_False;
+      return false;
     }
   }
   else if (!isSubdivisionFace) {
     // surface_data is required for regular faces
     addError("Face " + std::to_string(theId) + " missing 'data.surface_data' field");
-    return Standard_False;
+    return false;
   }
   // For subdivision faces, surface_data is optional (they may not have explicit surface geometry)
 
@@ -433,10 +427,10 @@ Standard_Boolean EzDesignJsonReader::parseFace(const json& theJson, int theId)
   // Note: is_normal_outward is ignored per design decision
 
   myFaces[theId] = face;
-  return Standard_True;
+  return true;
 }
 
-Standard_Boolean EzDesignJsonReader::parseShell(const json& theJson, int theId)
+bool EzDesignJsonReader::parseShell(const json& theJson, int theId)
 {
   EzShell shell;
   shell.id = theId;
@@ -444,7 +438,7 @@ Standard_Boolean EzDesignJsonReader::parseShell(const json& theJson, int theId)
   // Check for data wrapper
   if (!theJson.contains("data") || !theJson["data"].is_object()) {
     addError("Shell " + std::to_string(theId) + " missing 'data' field");
-    return Standard_False;
+    return false;
   }
   const json& data = theJson["data"];
 
@@ -453,7 +447,7 @@ Standard_Boolean EzDesignJsonReader::parseShell(const json& theJson, int theId)
   }
   else {
     addError("Shell " + std::to_string(theId) + " missing 'data.body_id' field");
-    return Standard_False;
+    return false;
   }
 
   // Parse face_ids
@@ -464,21 +458,21 @@ Standard_Boolean EzDesignJsonReader::parseShell(const json& theJson, int theId)
   }
   else {
     addError("Shell " + std::to_string(theId) + " missing or invalid 'data.face_ids' field");
-    return Standard_False;
+    return false;
   }
 
   myShells[theId] = shell;
-  return Standard_True;
+  return true;
 }
 
-Standard_Boolean EzDesignJsonReader::parseBody(const json& theJson, int theId)
+bool EzDesignJsonReader::parseBody(const json& theJson, int theId)
 {
   myBody.id = theId;
 
   // Check for data wrapper
   if (!theJson.contains("data") || !theJson["data"].is_object()) {
     addError("Body " + std::to_string(theId) + " missing 'data' field");
-    return Standard_False;
+    return false;
   }
   const json& data = theJson["data"];
 
@@ -490,20 +484,20 @@ Standard_Boolean EzDesignJsonReader::parseBody(const json& theJson, int theId)
   }
   else {
     addError("Body " + std::to_string(theId) + " missing or invalid 'data.shell_ids' field");
-    return Standard_False;
+    return false;
   }
 
-  return Standard_True;
+  return true;
 }
 
-Standard_Boolean EzDesignJsonReader::parseCurveData(const json& theJson, EzCurveData& theCurveData)
+bool EzDesignJsonReader::parseCurveData(const json& theJson, EzCurveData& theCurveData)
 {
   return theJson.contains("control_points") && theJson.contains("basis")
       && parseControlPoints(theJson["control_points"], theCurveData.control_points)
       && parseBasis(theJson["basis"], theCurveData.basis);
 }
 
-Standard_Boolean EzDesignJsonReader::parseSurfaceData(const json& theJson, EzSurfaceData& theSurfaceData)
+bool EzDesignJsonReader::parseSurfaceData(const json& theJson, EzSurfaceData& theSurfaceData)
 {
   return theJson.contains("control_points") && theJson.contains("u_basis") && theJson.contains("v_basis")
       && parseControlPoints(theJson["control_points"], theSurfaceData.control_points)
@@ -511,7 +505,7 @@ Standard_Boolean EzDesignJsonReader::parseSurfaceData(const json& theJson, EzSur
       && parseBasis(theJson["v_basis"], theSurfaceData.v_basis);
 }
 
-Standard_Boolean EzDesignJsonReader::parseControlPoints(const json& theJson, EzControlPoints& theControlPoints)
+bool EzDesignJsonReader::parseControlPoints(const json& theJson, EzControlPoints& theControlPoints)
 {
   // Parse data array
   if (theJson.contains("data") && theJson["data"].is_array()) {
@@ -520,7 +514,7 @@ Standard_Boolean EzDesignJsonReader::parseControlPoints(const json& theJson, EzC
     }
   }
   else {
-    return Standard_False;
+    return false;
   }
 
   // Parse dimension
@@ -528,7 +522,7 @@ Standard_Boolean EzDesignJsonReader::parseControlPoints(const json& theJson, EzC
     theControlPoints.dimension = theJson["dimension"].get<int>();
   }
   else {
-    return Standard_False;
+    return false;
   }
 
   // Parse number_u_points
@@ -536,7 +530,7 @@ Standard_Boolean EzDesignJsonReader::parseControlPoints(const json& theJson, EzC
     theControlPoints.number_u_points = theJson["number_u_points"].get<int>();
   }
   else {
-    return Standard_False;
+    return false;
   }
 
   // Parse number_v_points
@@ -544,7 +538,7 @@ Standard_Boolean EzDesignJsonReader::parseControlPoints(const json& theJson, EzC
     theControlPoints.number_v_points = theJson["number_v_points"].get<int>();
   }
   else {
-    return Standard_False;
+    return false;
   }
 
   // Parse is_rational
@@ -555,17 +549,17 @@ Standard_Boolean EzDesignJsonReader::parseControlPoints(const json& theJson, EzC
     theControlPoints.is_rational = false;  // Default
   }
 
-  return Standard_True;
+  return true;
 }
 
-Standard_Boolean EzDesignJsonReader::parseBasis(const json& theJson, EzBasis& theBasis)
+bool EzDesignJsonReader::parseBasis(const json& theJson, EzBasis& theBasis)
 {
   // Parse degree
   if (theJson.contains("degree")) {
     theBasis.degree = theJson["degree"].get<int>();
   }
   else {
-    return Standard_False;
+    return false;
   }
 
   // Parse knot_vector
@@ -575,7 +569,7 @@ Standard_Boolean EzDesignJsonReader::parseBasis(const json& theJson, EzBasis& th
     }
   }
   else {
-    return Standard_False;
+    return false;
   }
 
   // Parse bounds
@@ -588,7 +582,7 @@ Standard_Boolean EzDesignJsonReader::parseBasis(const json& theJson, EzBasis& th
     }
   }
 
-  return Standard_True;
+  return true;
 }
 
 const EzBody& EzDesignJsonReader::GetBody() const
@@ -656,7 +650,7 @@ const EzShell& EzDesignJsonReader::GetShell(int theId) const
   return empty;
 }
 
-Standard_Boolean EzDesignJsonReader::validateTopology()
+bool EzDesignJsonReader::validateTopology()
 {
   // Create mutable copy for error collection
   std::vector<std::string> errors;
