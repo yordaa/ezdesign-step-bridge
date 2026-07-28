@@ -41,9 +41,6 @@ public:
   //! Convert body to TopoDS_Shape
   Standard_EXPORT TopoDS_Shape ConvertBody(const EzBody& theBody);
 
-  //! Check for errors
-  Standard_EXPORT Standard_Boolean HasErrors() const;
-
   //! Get error messages
   Standard_EXPORT const std::vector<std::string>& GetErrors() const;
 

@@ -155,21 +155,6 @@ int main(int argc, char* argv[])
       return 3;
     }
 
-    if (!reader.IsDone()) {
-      std::cerr << "ERROR: JSON reading incomplete" << std::endl;
-      return 3;
-    }
-
-    // 2. Validate parsed data (exit code 3: JSON parsing error)
-    if (!reader.Validate()) {
-      std::cerr << "ERROR: Validation failed" << std::endl;
-      const auto& errors = reader.GetErrors();
-      for (const auto& error : errors) {
-        std::cerr << "  " << error << std::endl;
-      }
-      return 3;
-    }
-
     std::cout << "Converting to OCCT format..." << std::endl;
 
     // 3. Convert to OCCT shapes (exit code 4: conversion error)
@@ -179,7 +164,7 @@ int main(int argc, char* argv[])
 
     if (shape.IsNull()) {
       std::cerr << "ERROR: Failed to convert to OCCT shape" << std::endl;
-      if (converter.HasErrors()) {
+      if (!converter.GetErrors().empty()) {
         const auto& errors = converter.GetErrors();
         for (const auto& error : errors) {
           std::cerr << "  " << error << std::endl;
@@ -188,7 +173,7 @@ int main(int argc, char* argv[])
       return 4;
     }
 
-    if (converter.HasErrors()) {
+    if (!converter.GetErrors().empty()) {
       std::cerr << "WARNING: Conversion completed with errors:" << std::endl;
       const auto& errors = converter.GetErrors();
       for (const auto& error : errors) {

@@ -15,7 +15,7 @@ int main(int argc, char* argv[])
 
   EzDesignJsonReader reader;
   EzDesignToOCCTConverter converter(reader);
-  if (!reader.ReadFile(argv[1]) || converter.ConvertBody(reader.GetBody()).IsNull() || converter.HasErrors()) return 1;
+  if (!reader.ReadFile(argv[1]) || converter.ConvertBody(reader.GetBody()).IsNull() || !converter.GetErrors().empty()) return 1;
 
   for (auto& [id, entity] : data["data"]["db"]["entities"].items()) {
     if (entity["type"] == "HalfEdge" && entity["data"].contains("curve_data")) {
@@ -27,7 +27,7 @@ int main(int argc, char* argv[])
   EzDesignJsonReader invalidReader;
   EzDesignToOCCTConverter invalidConverter(invalidReader);
   const bool rejected = invalidReader.ReadFile(path.string().c_str())
-    && (invalidConverter.ConvertBody(invalidReader.GetBody()).IsNull() || invalidConverter.HasErrors());
+    && (invalidConverter.ConvertBody(invalidReader.GetBody()).IsNull() || !invalidConverter.GetErrors().empty());
   std::filesystem::remove(path);
   return rejected ? 0 : 1;
 }
