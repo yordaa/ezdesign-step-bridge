@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>EzDesign ↔ OCCT orientation map</title>
+  <link rel="stylesheet" href="../assets/course.css">
+</head>
+<body>
+<main>
+  <p class="eyebrow">Quick reference</p>
+  <h1>EzDesign ↔ OCCT orientation map</h1>
+
+  <table>
+    <thead>
+      <tr><th>Intent</th><th>EzDesign carrier</th><th>OCCT carrier</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Half-edge traversal</td>
+        <td>Loop order and pcurve direction</td>
+        <td>Oriented edge in wire</td>
+      </tr>
+      <tr>
+        <td>Finite trimmed region</td>
+        <td>Outer/inner loop convention</td>
+        <td>Wire orientation in face context</td>
+      </tr>
+      <tr>
+        <td>Face outward normal vs surface normal</td>
+        <td><code>is_surface_normal_same</code></td>
+        <td><code>TopoDS_Face::Orientation()</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Mapping rule</h2>
+  <pre><code>MakeFace(surface, outerWire, Standard_True)
+Add(innerWires)
+if (!is_surface_normal_same)
+    resultFace.Reverse()</code></pre>
+
+  <table>
+    <thead>
+      <tr><th>EzDesign flag</th><th>Outer UV input</th><th>OCCT face</th><th>Outward normal</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>true</code></td><td>CCW</td><td><code>FORWARD</code></td><td><code>+N<sub>s</sub></code></td></tr>
+      <tr><td><code>false</code></td><td>CW</td><td><code>REVERSED</code></td><td><code>−N<sub>s</sub></code></td></tr>
+    </tbody>
+  </table>
+
+  <p class="card"><strong>Do not map the flag to wire reversal.</strong>
+    <code>Inside=true</code> normalizes a closed wire to a finite UV area and
+    leaves the face orientation unchanged.</p>
+
+  <p class="caption">N<sub>s</sub> = ∂S/∂u × ∂S/∂v. A FORWARD face has outward
+    normal +N<sub>s</sub>; a REVERSED face has outward normal −N<sub>s</sub>.</p>
+
+  <footer>
+    <a href="../docs/research/occt-face-orientation.md">Full OCCT orientation
+      research and STEP round-trip evidence</a>
+  </footer>
+</main>
+</body>
+</html>
