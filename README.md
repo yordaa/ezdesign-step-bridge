@@ -36,6 +36,16 @@ build/vcpkg_installed/arm64-osx-dynamic/bin/ezd2step input.ezd output.step
 
 Tags named `v<version>` are the version authority and must match the versions in
 `CMakeLists.txt` and `vcpkg.json`. Tagged source archives are the release artifact.
+CMake passes its project version to `ezd2step --version`; the fallback in
+`src/ezd2step.cxx` is only for builds that bypass CMake.
+
+Use patch versions for compatible fixes, minor versions for compatible features,
+and major versions for breaking CLI or input-format changes. To release:
+
+1. Update the identical version in `CMakeLists.txt` and `vcpkg.json`.
+2. Build, test, and verify `ezd2step --version`.
+3. Commit the version change to `main`.
+4. Create and push a matching `v<version>` tag on that commit.
 
 ## Registry
 
