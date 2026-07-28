@@ -28,10 +28,6 @@
 #define EZD2STEP_VERSION "1.0.0"
 #endif
 
-//=======================================================================
-// function : printUsage
-// purpose  : Print usage information
-//=======================================================================
 void printUsage(const char* programName)
 {
   std::cout << "Usage: " << programName << " <input.ezd> <output.step>" << std::endl;
@@ -50,20 +46,12 @@ void printUsage(const char* programName)
   std::cout << "  " << programName << " model.ezd model.step" << std::endl;
 }
 
-//=======================================================================
-// function : printVersion
-// purpose  : Print version information
-//=======================================================================
 void printVersion()
 {
   std::cout << "ezd2step version " << EZD2STEP_VERSION << std::endl;
   std::cout << "Copyright (c) 2025 Yang Song. All rights reserved." << std::endl;
 }
 
-//=======================================================================
-// function : main
-// purpose  : Main entry point
-//=======================================================================
 int main(int argc, char* argv[])
 {
   // Handle --version and --help flags
