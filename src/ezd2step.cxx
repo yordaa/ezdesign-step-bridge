@@ -16,7 +16,6 @@
 #include <STEPControl_Reader.hxx>
 #include <IFSelect_ReturnStatus.hxx>
 #include <IFSelect_PrintCount.hxx>
-#include <TCollection_AsciiString.hxx>
 #include <StepData_StepModel.hxx>
 #include <Interface_Check.hxx>
 #include <iostream>
@@ -81,7 +80,7 @@ int main(int argc, char* argv[])
 
     // 1. Read JSON file (exit code 3: JSON parsing error)
     EzDesignJsonReader reader;
-    if (!reader.ReadFile(TCollection_AsciiString(inputFile))) {
+    if (!reader.ReadFile(inputFile)) {
       std::cerr << "ERROR: Failed to read JSON file" << std::endl;
       const auto& errors = reader.GetErrors();
       for (const auto& error : errors) {
