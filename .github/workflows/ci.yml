@@ -11,18 +11,17 @@ jobs:
           - os: macos-15
             triplet: arm64-osx-dynamic
           - os: windows-2022
-            triplet: x64-windows
+            triplet: x64-windows-release
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v6
       - name: Prepare vcpkg cache directories
-        run: cmake -E make_directory .vcpkg-binary-cache build/vcpkg_installed
+        run: cmake -E make_directory .vcpkg-binary-cache
       - name: Cache vcpkg packages
         uses: actions/cache@v5
         with:
           path: |
             .vcpkg-binary-cache
-            build/vcpkg_installed
           key: ${{ matrix.os }}-${{ matrix.triplet }}-vcpkg-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json', 'triplets/**') }}
           restore-keys: |
             ${{ matrix.os }}-${{ matrix.triplet }}-vcpkg-
@@ -35,8 +34,23 @@ jobs:
           -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake
           -DVCPKG_TARGET_TRIPLET=${{ matrix.triplet }}
           -DVCPKG_OVERLAY_TRIPLETS=${{ github.workspace }}/triplets
+          -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/build/vcpkg_installed/${{ matrix.triplet }}
           -DCMAKE_BUILD_TYPE=Release
       - name: Build
         run: cmake --build build --config Release --parallel
+      - name: Install
+        run: cmake --install build --config Release
       - name: Test
         run: ctest --test-dir build -C Release --output-on-failure
+      - name: Inspect macOS runtime dependencies
+        if: runner.os == 'macOS'
+        run: otool -L build/vcpkg_installed/${{ matrix.triplet }}/bin/ezd2step | grep libTKDESTEP
+      - name: Inspect Windows runtime dependencies
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $dumpbin = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -find "VC\Tools\MSVC\**\bin\Hostx64\x64\dumpbin.exe" | Select-Object -First 1
+          if (-not $dumpbin) { throw "dumpbin.exe not found" }
+          $dependencies = & $dumpbin /dependents "build\vcpkg_installed\${{ matrix.triplet }}\bin\ezd2step.exe"
+          if ($dependencies -notmatch "TKDESTEP.*\.dll") { throw "ezd2step is not dynamically linked to TKDESTEP" }
+          $dependencies

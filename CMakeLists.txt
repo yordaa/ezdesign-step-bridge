@@ -1,15 +1,11 @@
 cmake_minimum_required(VERSION 3.20)
-project(ezd2step VERSION 1.0.2 LANGUAGES CXX)
+project(ezdesign-step-bridge VERSION 1.0.3 LANGUAGES CXX)
 
 include(CTest)
+include(GNUInstallDirs)
 find_package(OpenCASCADE CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 
-set(EZD2STEP_SOURCES
-  src/ezd_to_step.cxx
-  src/EzDesignJsonReader.cxx
-  src/EzDesignToOCCTConverter.cxx
-)
 set(EZD2STEP_LIBRARIES
   nlohmann_json::nlohmann_json
   TKDESTEP TKXSBase TKDE TKBRep TKTopAlgo TKGeomAlgo
@@ -22,7 +18,11 @@ function(ezd2step_target target)
   target_link_libraries(${target} PRIVATE ${EZD2STEP_LIBRARIES})
 endfunction()
 
-add_executable(ezd2step src/ezd2step.cxx ${EZD2STEP_SOURCES})
+add_executable(ezd2step
+  src/ezd2step.cxx
+  src/EzDesignJsonReader.cxx
+  src/EzDesignToOCCTConverter.cxx
+)
 ezd2step_target(ezd2step)
 target_compile_definitions(ezd2step PRIVATE
   EZD2STEP_VERSION_MAJOR=${PROJECT_VERSION_MAJOR}
@@ -31,27 +31,15 @@ target_compile_definitions(ezd2step PRIVATE
   EZD2STEP_VERSION="${PROJECT_VERSION}"
 )
 
-add_library(ezd2step_capi SHARED ${EZD2STEP_SOURCES})
-ezd2step_target(ezd2step_capi)
-set_target_properties(ezd2step_capi PROPERTIES
-  OUTPUT_NAME ezd2step
-  VERSION ${PROJECT_VERSION}
-  SOVERSION ${PROJECT_VERSION_MAJOR}
-)
-
 if(APPLE)
-  set_target_properties(ezd2step ezd2step_capi PROPERTIES
-    INSTALL_RPATH "@loader_path"
+  set_target_properties(ezd2step PROPERTIES
+    INSTALL_RPATH "@loader_path/../${CMAKE_INSTALL_LIBDIR}"
     BUILD_WITH_INSTALL_RPATH FALSE
   )
 endif()
 
-install(TARGETS ezd2step ezd2step_capi
-  RUNTIME DESTINATION bin
-  LIBRARY DESTINATION lib
-  ARCHIVE DESTINATION lib
-)
-install(FILES include/ezd_to_step.h DESTINATION include)
+install(TARGETS ezd2step RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(FILES LICENSE NOTICE DESTINATION ${CMAKE_INSTALL_DATADIR}/ezdesign-step-bridge)
 
 if(BUILD_TESTING)
   add_executable(test_json_reader_entities_schema
@@ -62,26 +50,23 @@ if(BUILD_TESTING)
 
   add_executable(test_20260427_conversion
     tests/test_20260427_conversion.cxx
-    ${EZD2STEP_SOURCES}
   )
   ezd2step_target(test_20260427_conversion)
 
   add_test(NAME json_reader_entities_schema
     COMMAND test_json_reader_entities_schema
   )
-  add_test(NAME conversion_20260427
+  set(EZD2STEP_TEST_OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/20260427.step")
+  add_test(NAME installed_cli_conversion_20260427
+    COMMAND "${CMAKE_INSTALL_FULL_BINDIR}/ezd2step${CMAKE_EXECUTABLE_SUFFIX}"
+            "${CMAKE_CURRENT_SOURCE_DIR}/tests/data/20260427.ezd"
+            "${EZD2STEP_TEST_OUTPUT}"
+  )
+  add_test(NAME conversion_20260427_geometry
     COMMAND test_20260427_conversion
-            ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/20260427.ezd
+            "${EZD2STEP_TEST_OUTPUT}"
+  )
+  set_tests_properties(conversion_20260427_geometry PROPERTIES
+    DEPENDS installed_cli_conversion_20260427
   )
 endif()
-
-add_custom_target(package_ezd2step_bundle
-  COMMAND ${CMAKE_COMMAND}
-    -DEZD2STEP_EXECUTABLE=$<TARGET_FILE:ezd2step>
-    -DEZD2STEP_VERSION=${PROJECT_VERSION}
-    -DEZD2STEP_SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}
-    -DEZD2STEP_BINARY_DIR=${CMAKE_CURRENT_BINARY_DIR}
-    -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/package_bundle.cmake
-  DEPENDS ezd2step
-  VERBATIM
-)
