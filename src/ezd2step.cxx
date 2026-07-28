@@ -20,7 +20,6 @@
 #include <StepData_StepModel.hxx>
 #include <Interface_Check.hxx>
 #include <iostream>
-#include <fstream>
 #include <cstring>
 #include <string>
 
@@ -62,46 +61,6 @@ void printVersion()
 }
 
 //=======================================================================
-// function : checkFileExists
-// purpose  : Check if file exists and is readable
-//=======================================================================
-bool checkFileExists(const char* filePath)
-{
-  std::ifstream file(filePath);
-  return file.good();
-}
-
-//=======================================================================
-// function : checkDirectoryWritable
-// purpose  : Check if output directory is writable by attempting to create a test file
-//=======================================================================
-bool checkDirectoryWritable(const char* filePath)
-{
-  // Extract directory from file path
-  std::string path(filePath);
-  size_t lastSlash = path.find_last_of("/\\");
-  std::string dir;
-  
-  if (lastSlash == std::string::npos) {
-    // File is in current directory
-    dir = ".";
-  } else {
-    dir = path.substr(0, lastSlash);
-  }
-  
-  // Try to create a temporary file in the directory to test write access
-  std::string testFile = dir + "/.ezd2step_write_test";
-  std::ofstream test(testFile.c_str());
-  if (test.good()) {
-    test.close();
-    // Remove test file
-    std::remove(testFile.c_str());
-    return true;
-  }
-  return false;
-}
-
-//=======================================================================
 // function : main
 // purpose  : Main entry point
 //=======================================================================
@@ -129,18 +88,6 @@ int main(int argc, char* argv[])
 
   try {
     OCC_CATCH_SIGNALS
-
-    // Check input file exists and is readable (exit code 2: file I/O error)
-    if (!checkFileExists(inputFile)) {
-      std::cerr << "ERROR: Cannot open input file: " << inputFile << std::endl;
-      return 2;
-    }
-
-    // Check output directory is writable (exit code 2: file I/O error)
-    if (!checkDirectoryWritable(outputFile)) {
-      std::cerr << "ERROR: Cannot write to output directory for: " << outputFile << std::endl;
-      return 2;
-    }
 
     std::cout << "Reading JSON file: " << inputFile << std::endl;
 

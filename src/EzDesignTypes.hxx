@@ -9,10 +9,7 @@
 #ifndef _EzDesignTypes_HeaderFile
 #define _EzDesignTypes_HeaderFile
 
-#include <Standard.hxx>
-#include <Standard_DefineAlloc.hxx>
 #include <vector>
-#include <map>
 
 //! Data structures matching ezdesign JSON format
 
@@ -119,4 +116,3 @@ struct EzBody
 };
 
 #endif // _EzDesignTypes_HeaderFile
-
