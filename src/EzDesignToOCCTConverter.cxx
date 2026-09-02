@@ -22,6 +22,7 @@
 #include <BRep_Tool.hxx>
 #include <TopTools_ListOfShape.hxx>
 #include <TopExp.hxx>
+#include <TopExp_Explorer.hxx>
 #include <Precision.hxx>
 #include <TopLoc_Location.hxx>
 #include <gp_Pnt.hxx>
@@ -67,10 +68,13 @@ TopoDS_Shape EzDesignToOCCTConverter::ConvertBody(const EzBody& theBody)
     }
     BRepLib::SameParameter(aShape, anExportTolerance, Standard_True);
 
-    BRepCheck_Analyzer anAnalyzer(aShape, Standard_True, Standard_False, Standard_True);
-    if (!anAnalyzer.IsValid()) {
-      addError("Converted shape has inconsistent edge geometry");
-      return TopoDS_Shape();
+    for (TopExp_Explorer anExplorer(aShape, TopAbs_FACE); anExplorer.More(); anExplorer.Next()) {
+      BRepCheck_Analyzer anAnalyzer(
+        anExplorer.Current(), Standard_True, Standard_False, Standard_True);
+      if (!anAnalyzer.IsValid()) {
+        addError("Converted face has inconsistent edge geometry");
+        return TopoDS_Shape();
+      }
     }
     return aShape;
   }
