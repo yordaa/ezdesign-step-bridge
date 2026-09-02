@@ -10,6 +10,8 @@
 
 #include <Standard_Failure.hxx>
 #include <Standard_ErrorHandler.hxx>
+#include <BRepCheck_Analyzer.hxx>
+#include <BRepLib.hxx>
 #include <TopoDS.hxx>
 #include <BRep_Builder.hxx>
 #include <BRepBuilderAPI_MakeVertex.hxx>
@@ -53,7 +55,24 @@ TopoDS_Shape EzDesignToOCCTConverter::ConvertBody(const EzBody& theBody)
 
   try {
     OCC_CATCH_SIGNALS
-    return convertBody(theBody);
+    TopoDS_Shape aShape = convertBody(theBody);
+    if (aShape.IsNull()) {
+      return aShape;
+    }
+
+    constexpr Standard_Real anExportTolerance = 1.0e-5;
+    if (!BRepLib::BuildCurves3d(aShape, anExportTolerance)) {
+      addError("Failed to construct 3D edge curves");
+      return TopoDS_Shape();
+    }
+    BRepLib::SameParameter(aShape, anExportTolerance, Standard_True);
+
+    BRepCheck_Analyzer anAnalyzer(aShape, Standard_True, Standard_False, Standard_True);
+    if (!anAnalyzer.IsValid()) {
+      addError("Converted shape has inconsistent edge geometry");
+      return TopoDS_Shape();
+    }
+    return aShape;
   }
   catch (const Standard_Failure& e) {
     addError(std::string("OCCT exception: ") + e.GetMessageString());
@@ -384,6 +403,7 @@ void EzDesignToOCCTConverter::addPCurveToEdge(
   EzCurveData curveData = theHalfEdge.curve_data;
   bool hasCurveData = !curveData.control_points.data.empty() &&
                       curveData.control_points.number_v_points >= 2;
+  const bool isCurrentHalfEdgeCurve = hasCurveData;
 
   // If no curve_data, try opposite half-edge
   if (!hasCurveData && theHalfEdge.opposite_id != 0) {
@@ -402,9 +422,16 @@ void EzDesignToOCCTConverter::addPCurveToEdge(
     // Convert 2D curve from curve_data
     Handle(Geom2d_BSplineCurve) curve2d = convertCurve2D(curveData);
     if (!curve2d.IsNull()) {
-      pcurve = curve2d;
       uMin = curveData.basis.bounds.minimum;
       uMax = curveData.basis.bounds.maximum;
+      if (isCurrentHalfEdgeCurve) {
+        const Standard_Real aReversedMin = curve2d->ReversedParameter(uMax);
+        const Standard_Real aReversedMax = curve2d->ReversedParameter(uMin);
+        curve2d->Reverse();
+        uMin = aReversedMin;
+        uMax = aReversedMax;
+      }
+      pcurve = curve2d;
     }
   }
 
