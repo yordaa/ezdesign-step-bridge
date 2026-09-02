@@ -61,6 +61,13 @@ if(BUILD_TESTING)
   )
   ezd2step_target(test_face_orientation)
 
+  add_executable(test_edge_geometry
+    tests/test_edge_geometry.cxx
+    src/EzDesignJsonReader.cxx
+    src/EzDesignToOCCTConverter.cxx
+  )
+  ezd2step_target(test_edge_geometry)
+
   add_test(NAME json_reader_entities_schema
     COMMAND test_json_reader_entities_schema
   )
@@ -79,6 +86,9 @@ if(BUILD_TESTING)
   )
   add_test(NAME knot_validation
     COMMAND test_knot_validation "${CMAKE_CURRENT_SOURCE_DIR}/tests/data/20260427.ezd"
+  )
+  add_test(NAME edge_geometry
+    COMMAND test_edge_geometry "${CMAKE_CURRENT_SOURCE_DIR}/tests/data/20260427.ezd"
   )
 
   set(EZD2STEP_ORIENTATION_OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/orientation-pair.step")
