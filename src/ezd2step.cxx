@@ -19,6 +19,7 @@
 #include <StepData_StepModel.hxx>
 #include <Interface_Check.hxx>
 #include <Interface_Static.hxx>
+#include <UnitsMethods.hxx>
 #include <iostream>
 #include <cstring>
 #include <string>
@@ -121,6 +122,7 @@ int main(int argc, char* argv[])
     // 4. Export to STEP (exit code 5: STEP export error)
     STEPControl_Writer writer;
     Interface_Static::SetCVal("write.step.unit", reader.GetModelUnit().c_str());
+    UnitsMethods::SetCasCadeLengthUnit(Interface_Static::IVal("write.step.unit"));
     IFSelect_ReturnStatus status = writer.Transfer(shape, STEPControl_AsIs);
 
     if (status != IFSelect_RetDone) {
