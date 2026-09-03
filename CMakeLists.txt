@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(ezdesign-step-bridge VERSION 1.1.4 LANGUAGES CXX)
+project(ezdesign-step-bridge VERSION 1.1.6 LANGUAGES CXX)
 
 include(CTest)
 include(GNUInstallDirs)

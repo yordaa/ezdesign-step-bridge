@@ -19,7 +19,9 @@
 #include <StepData_StepModel.hxx>
 #include <Interface_Check.hxx>
 #include <Interface_Static.hxx>
-#include <UnitsMethods.hxx>
+#include <BRepBuilderAPI_Transform.hxx>
+#include <gp_Pnt.hxx>
+#include <gp_Trsf.hxx>
 #include <iostream>
 #include <cstring>
 #include <string>
@@ -120,9 +122,15 @@ int main(int argc, char* argv[])
     std::cout << "Writing STEP file: " << outputFile << std::endl;
 
     // 4. Export to STEP (exit code 5: STEP export error)
+    const std::string& modelUnit = reader.GetModelUnit();
+    const double unitScale = modelUnit == "M" ? 1000.0 : modelUnit == "CM" ? 10.0 : modelUnit == "INCH" ? 25.4 : 1.0;
+    if (unitScale != 1.0) {
+      gp_Trsf scale;
+      scale.SetScale(gp_Pnt(0.0, 0.0, 0.0), unitScale);
+      shape = BRepBuilderAPI_Transform(shape, scale, true).Shape();
+    }
     STEPControl_Writer writer;
-    Interface_Static::SetCVal("write.step.unit", reader.GetModelUnit().c_str());
-    UnitsMethods::SetCasCadeLengthUnit(Interface_Static::IVal("write.step.unit"));
+    Interface_Static::SetCVal("write.step.unit", modelUnit.c_str());
     IFSelect_ReturnStatus status = writer.Transfer(shape, STEPControl_AsIs);
 
     if (status != IFSelect_RetDone) {
