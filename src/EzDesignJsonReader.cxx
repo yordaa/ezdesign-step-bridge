@@ -39,6 +39,7 @@ bool EzDesignJsonReader::ReadFile(const std::filesystem::path& theFileName)
   myFaces.clear();
   myShells.clear();
   myBody = EzBody();
+  myModelUnit = "MM";
 
   try {
 
@@ -90,6 +91,23 @@ bool EzDesignJsonReader::ReadFile(const std::filesystem::path& theFileName)
       }
     }
 
+    if (jsonData.contains("data") && jsonData["data"].is_object() &&
+        jsonData["data"].contains("modelUnit")) {
+      static const std::map<std::string, std::string> aStepUnits = {
+        {"mm", "MM"}, {"cm", "CM"}, {"m", "M"}, {"in", "INCH"}
+      };
+      if (!jsonData["data"]["modelUnit"].is_string()) {
+        addError("Invalid modelUnit: expected mm, cm, m, or in");
+        return false;
+      }
+      const auto anIt = aStepUnits.find(jsonData["data"]["modelUnit"].get<std::string>());
+      if (anIt == aStepUnits.end()) {
+        addError("Invalid modelUnit: expected mm, cm, m, or in");
+        return false;
+      }
+      myModelUnit = anIt->second;
+    }
+
     // Extract data from "entities" entry (data.db.entities structure)
     json dataToParse = jsonData;
     if (jsonData.contains("data") && jsonData["data"].is_object() &&
@@ -128,6 +146,11 @@ bool EzDesignJsonReader::ReadFile(const std::filesystem::path& theFileName)
     addError("Unknown exception occurred");
     return false;
   }
+}
+
+const std::string& EzDesignJsonReader::GetModelUnit() const
+{
+  return myModelUnit;
 }
 
 bool EzDesignJsonReader::parseJson(const json& theJson)

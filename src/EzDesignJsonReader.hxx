@@ -36,6 +36,9 @@ public:
   //! Get parsed body
   const EzBody& GetBody() const;
 
+  //! Get document model unit as an OCCT STEP unit name
+  const std::string& GetModelUnit() const;
+
   //! Get vertex by ID
   const EzVertex& GetVertex(int theId) const;
 
@@ -102,6 +105,7 @@ private:
 
 private:
   EzBody myBody;
+  std::string myModelUnit = "MM";
   std::map<int, EzVertex> myVertices;
   std::map<int, EzEdge> myEdges;
   std::map<int, EzHalfEdge> myHalfEdges;

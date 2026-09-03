@@ -56,6 +56,7 @@ bool testEntitiesSchemaParsesReferenceIds()
     "version": "0.1.7"
   },
   "data": {
+    "modelUnit": "m",
     "db": {
       "body_ids": [1],
       "entities": {
@@ -140,6 +141,7 @@ bool testEntitiesSchemaParsesReferenceIds()
   }
 
   bool isOk = true;
+  isOk &= expect(aReader.GetModelUnit() == "M", "model unit should map to the OCCT STEP unit");
   isOk &= expect(aReader.GetBody().id == 1, "body id should come from entity id");
   isOk &= expect(aReader.GetBody().shell_ids.size() == 1 && aReader.GetBody().shell_ids[0] == 2,
                  "body shell_ids should be parsed");

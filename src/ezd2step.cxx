@@ -18,6 +18,7 @@
 #include <IFSelect_PrintCount.hxx>
 #include <StepData_StepModel.hxx>
 #include <Interface_Check.hxx>
+#include <Interface_Static.hxx>
 #include <iostream>
 #include <cstring>
 #include <string>
@@ -118,6 +119,7 @@ int main(int argc, char* argv[])
     std::cout << "Writing STEP file: " << outputFile << std::endl;
 
     // 4. Export to STEP (exit code 5: STEP export error)
+    Interface_Static::SetCVal("write.step.unit", reader.GetModelUnit().c_str());
     STEPControl_Writer writer;
     IFSelect_ReturnStatus status = writer.Transfer(shape, STEPControl_AsIs);
 
