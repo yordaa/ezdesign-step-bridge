@@ -119,8 +119,8 @@ int main(int argc, char* argv[])
     std::cout << "Writing STEP file: " << outputFile << std::endl;
 
     // 4. Export to STEP (exit code 5: STEP export error)
-    Interface_Static::SetCVal("write.step.unit", reader.GetModelUnit().c_str());
     STEPControl_Writer writer;
+    Interface_Static::SetCVal("write.step.unit", reader.GetModelUnit().c_str());
     IFSelect_ReturnStatus status = writer.Transfer(shape, STEPControl_AsIs);
 
     if (status != IFSelect_RetDone) {
